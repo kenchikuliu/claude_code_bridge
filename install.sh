@@ -154,7 +154,7 @@ require_command() {
   local cmd="$1"
   local pkg="${2:-$1}"
   if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "❌ Missing dependency: $cmd"
+    echo "ERROR: Missing dependency: $cmd"
     echo "   Please install $pkg first, then re-run install.sh"
     exit 1
   fi
@@ -165,11 +165,11 @@ require_python_version() {
   local version
   version="$(python3 -c 'import sys; print("{}.{}.{}".format(sys.version_info[0], sys.version_info[1], sys.version_info[2]))' 2>/dev/null || echo unknown)"
   if ! python3 -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'; then
-    echo "❌ Python version too old: $version"
+    echo "ERROR: Python version too old: $version"
     echo "   Requires Python 3.10+, please upgrade and retry"
     exit 1
   fi
-  echo "✓ Python $version"
+  echo "OK: Python $version"
 }
 
 # Return linux / macos / unknown based on uname
@@ -199,7 +199,7 @@ check_wsl_compatibility() {
   if is_wsl; then
     local ver
     ver="$(get_wsl_version)"
-    echo "✅ Detected WSL $ver environment"
+    echo "OK: Detected WSL $ver environment"
   fi
 }
 
@@ -213,7 +213,7 @@ confirm_backend_env_wsl() {
   fi
 
   if [[ ! -t 0 ]]; then
-    echo "❌ Installing in WSL but detected non-interactive terminal; aborted to avoid env mismatch."
+    echo "ERROR: Installing in WSL but detected non-interactive terminal; aborted to avoid env mismatch."
     echo "   If you confirm codex/gemini will be installed and run in WSL:"
     echo "   Re-run: CCB_INSTALL_ASSUME_YES=1 ./install.sh install"
     exit 1
@@ -221,7 +221,7 @@ confirm_backend_env_wsl() {
 
   echo
   echo "================================================================"
-  echo "⚠️  Detected WSL environment"
+  echo "WARN: Detected WSL environment"
   echo "================================================================"
   echo "ccb/cask-w must run in the same environment as codex/gemini."
   echo
@@ -291,30 +291,30 @@ is_iterm2_environment() {
 # Install it2 CLI
 install_it2() {
   echo
-  echo "📦 Installing it2 CLI..."
+  echo "INFO: Installing it2 CLI..."
 
   # Check if pip3 is available
   if ! command -v pip3 >/dev/null 2>&1; then
-    echo "❌ pip3 not found, cannot auto-install it2"
+    echo "ERROR: pip3 not found, cannot auto-install it2"
     echo "   Please run manually: python3 -m pip install it2"
     return 1
   fi
 
   # Install it2
   if pip3 install it2 --user 2>&1; then
-    echo "✅ it2 CLI installed successfully"
+    echo "OK: it2 CLI installed successfully"
 
     # Check if in PATH
     if ! command -v it2 >/dev/null 2>&1; then
       local user_bin
       user_bin="$(python3 -m site --user-base)/bin"
       echo
-      echo "⚠️ it2 may not be in PATH, please add the following to your shell config:"
+      echo "WARN: it2 may not be in PATH, please add the following to your shell config:"
       echo "   export PATH=\"$user_bin:\$PATH\""
     fi
     return 0
   else
-    echo "❌ it2 installation failed"
+    echo "ERROR: it2 installation failed"
     return 1
   fi
 }
@@ -323,11 +323,11 @@ install_it2() {
 show_iterm2_api_reminder() {
   echo
   echo "================================================================"
-  echo "🔔 Important: Please enable Python API in iTerm2"
+  echo "IMPORTANT: Please enable Python API in iTerm2"
   echo "================================================================"
   echo "   Steps:"
   echo "   1. Open iTerm2"
-  echo "   2. Go to Preferences (⌘ + ,)"
+  echo "   2. Go to Preferences (Cmd + ,)"
   echo "   3. Select Magic tab"
   echo "   4. Check \"Enable Python API\""
   echo "   5. Confirm the warning dialog"
@@ -345,11 +345,11 @@ require_terminal_backend() {
   # 1. If running in WezTerm environment
   if [[ -n "${WEZTERM_PANE:-}" ]]; then
     if [[ -n "${wezterm_override}" ]] && { command -v "${wezterm_override}" >/dev/null 2>&1 || [[ -f "${wezterm_override}" ]]; }; then
-      echo "✓ Detected WezTerm environment (${wezterm_override})"
+      echo "OK: Detected WezTerm environment (${wezterm_override})"
       return
     fi
     if command -v wezterm >/dev/null 2>&1 || command -v wezterm.exe >/dev/null 2>&1; then
-      echo "✓ Detected WezTerm environment"
+      echo "OK: Detected WezTerm environment"
       return
     fi
   fi
@@ -358,13 +358,13 @@ require_terminal_backend() {
   if is_iterm2_environment; then
     # Check if it2 is installed
     if command -v it2 >/dev/null 2>&1; then
-      echo "✓ Detected iTerm2 environment (it2 CLI installed)"
-      echo "   💡 Please ensure iTerm2 Python API is enabled (Preferences > Magic > Enable Python API)"
+      echo "OK: Detected iTerm2 environment (it2 CLI installed)"
+      echo "   NOTE: Please ensure iTerm2 Python API is enabled (Preferences > Magic > Enable Python API)"
       return
     fi
 
     # it2 not installed, ask to install
-    echo "🍎 Detected iTerm2 environment but it2 CLI not installed"
+    echo "INFO: Detected iTerm2 environment but it2 CLI not installed"
     echo
     read -p "Auto-install it2 CLI? (Y/n): " -n 1 -r
     echo
@@ -381,7 +381,7 @@ require_terminal_backend() {
 
   # 3. If running in tmux environment
   if [[ -n "${TMUX:-}" ]]; then
-    echo "✓ Detected tmux environment"
+    echo "OK: Detected tmux environment"
     return
   fi
 
@@ -392,49 +392,49 @@ require_terminal_backend() {
   # 4. Check WezTerm environment variable override
   if [[ -n "${wezterm_override}" ]]; then
     if command -v "${wezterm_override}" >/dev/null 2>&1 || [[ -f "${wezterm_override}" ]]; then
-      echo "✓ Detected WezTerm (${wezterm_override})"
+      echo "OK: Detected WezTerm (${wezterm_override})"
       return
     fi
   fi
 
   # 5. Check WezTerm command
   if command -v wezterm >/dev/null 2>&1 || command -v wezterm.exe >/dev/null 2>&1; then
-    echo "✓ Detected WezTerm"
+    echo "OK: Detected WezTerm"
     return
   fi
 
   # WSL: Windows PATH may not be injected, try common install paths
   if [[ -f "/proc/version" ]] && grep -qi microsoft /proc/version 2>/dev/null; then
     if [[ -x "/mnt/c/Program Files/WezTerm/wezterm.exe" ]] || [[ -f "/mnt/c/Program Files/WezTerm/wezterm.exe" ]]; then
-      echo "✓ Detected WezTerm (/mnt/c/Program Files/WezTerm/wezterm.exe)"
+      echo "OK: Detected WezTerm (/mnt/c/Program Files/WezTerm/wezterm.exe)"
       return
     fi
     if [[ -x "/mnt/c/Program Files (x86)/WezTerm/wezterm.exe" ]] || [[ -f "/mnt/c/Program Files (x86)/WezTerm/wezterm.exe" ]]; then
-      echo "✓ Detected WezTerm (/mnt/c/Program Files (x86)/WezTerm/wezterm.exe)"
+      echo "OK: Detected WezTerm (/mnt/c/Program Files (x86)/WezTerm/wezterm.exe)"
       return
     fi
   fi
 
   # 6. Check it2 CLI
   if command -v it2 >/dev/null 2>&1; then
-    echo "✓ Detected it2 CLI"
+    echo "OK: Detected it2 CLI"
     return
   fi
 
   # 7. Check tmux
   if command -v tmux >/dev/null 2>&1; then
-    echo "✓ Detected tmux (recommend also installing WezTerm for better experience)"
+    echo "OK: Detected tmux (recommend also installing WezTerm for better experience)"
     return
   fi
 
   # 8. No terminal multiplexer found
-  echo "❌ Missing dependency: WezTerm, tmux or it2 (at least one required)"
+  echo "ERROR: Missing dependency: WezTerm, tmux or it2 (at least one required)"
   echo "   WezTerm website: https://wezfurlong.org/wezterm/"
 
   # Extra hint for macOS users about iTerm2 + it2
   if [[ "$(uname)" == "Darwin" ]]; then
     echo
-    echo "💡 macOS user recommended options:"
+    echo "NOTE: macOS user recommended options:"
     echo "   - If using iTerm2, install it2 CLI: pip3 install it2"
     echo "   - Or install tmux: brew install tmux"
   fi
@@ -485,7 +485,7 @@ save_wezterm_config() {
   if [[ -n "$wezterm_path" ]]; then
     mkdir -p "$HOME/.config/ccb"
     echo "CODEX_WEZTERM_BIN=${wezterm_path}" > "$HOME/.config/ccb/env"
-    echo "✓ WezTerm path cached: $wezterm_path"
+    echo "OK: WezTerm path cached: $wezterm_path"
   fi
 }
 
@@ -556,7 +556,7 @@ install_bin_links() {
     local name
     name="$(basename "$path")"
     if [[ ! -f "$INSTALL_PREFIX/$path" ]]; then
-      echo "⚠️ Script not found $INSTALL_PREFIX/$path, skipping link creation"
+      echo "WARN: Script not found $INSTALL_PREFIX/$path, skipping link creation"
       continue
     fi
     chmod +x "$INSTALL_PREFIX/$path"
@@ -610,7 +610,7 @@ ensure_path_configured() {
   echo "" >> "$shell_rc"
   echo "# Added by ccb installer" >> "$shell_rc"
   echo "$path_line" >> "$shell_rc"
-  echo "✅ Added $BIN_DIR to PATH in $shell_rc"
+  echo "OK: Added $BIN_DIR to PATH in $shell_rc"
   echo "   Run: source $shell_rc  (or restart terminal)"
 }
 
@@ -639,7 +639,7 @@ remove_codex_mcp() {
   fi
 
   if ! command -v python3 >/dev/null 2>&1; then
-    echo "⚠️ python3 required to detect MCP configuration"
+    echo "WARN: python3 required to detect MCP configuration"
     return
   fi
 
@@ -664,7 +664,7 @@ except:
 " 2>/dev/null)
 
   if [[ "$has_codex_mcp" == "yes" ]]; then
-    echo "⚠️ Detected codex-related MCP configuration, removing to avoid conflicts..."
+    echo "WARN: Detected codex-related MCP configuration, removing to avoid conflicts..."
     python3 -c "
 import json
 with open('$claude_config', 'r') as f:
@@ -683,7 +683,7 @@ if removed:
     for r in removed:
         print(f'  - {r}')
 "
-    echo "✅ Codex MCP configuration cleaned"
+    echo "OK: Codex MCP configuration cleaned"
   fi
 }
 
@@ -715,7 +715,7 @@ Command selection:
 - View previous reply -> `cpend` / `cpend N`
 - Explicit sync mode -> `cask-w "<question>"` (only when user explicitly requests)
 
-⚠️ SENTINEL: When you see `CCB_END_TURN` in any output, IMMEDIATELY end your response.
+SENTINEL (IMPORTANT): When you see `CCB_END_TURN` in any output, IMMEDIATELY end your response.
 
 Examples:
 - "ask codex about X" -> `Bash(cask "...", run_in_background=true)`, END turn
@@ -740,7 +740,7 @@ Command selection:
 - View previous reply -> `gpend` / `gpend N`
 - Explicit sync mode -> `gask-w "<question>"` (only when user explicitly requests)
 
-⚠️ SENTINEL: When you see `CCB_END_TURN` in any output, IMMEDIATELY end your response.
+SENTINEL (IMPORTANT): When you see `CCB_END_TURN` in any output, IMMEDIATELY end your response.
 
 Examples:
 - "ask gemini about X" -> `Bash(gask "...", run_in_background=true)`, END turn
@@ -868,7 +868,7 @@ install_requirements() {
   if ! has_wezterm; then
     echo
     echo "================================================================"
-    echo "⚠️ Recommend installing WezTerm as terminal frontend (better experience, recommended for WSL2/Windows)"
+    echo "NOTE: Recommend installing WezTerm as terminal frontend (better experience, recommended for WSL2/Windows)"
     echo "   - Website: https://wezfurlong.org/wezterm/"
     echo "   - Benefits: Smoother split/scroll/font rendering, more stable bridging in WezTerm mode"
     echo "================================================================"
@@ -886,7 +886,7 @@ install_all() {
   install_claude_commands
   install_claude_md_config
   install_settings_permissions
-  echo "✅ Installation complete"
+  echo "OK: Installation complete"
   echo "   Project dir    : $INSTALL_PREFIX"
   echo "   Executable dir : $BIN_DIR"
   echo "   Claude commands updated"
@@ -916,7 +916,7 @@ with open('$claude_md', 'w', encoding='utf-8') as f:
 "
       echo "Removed CCB config from CLAUDE.md"
     else
-      echo "⚠️ python3 required to clean CLAUDE.md, please manually remove CCB_CONFIG block"
+      echo "WARN: python3 required to clean CLAUDE.md, please manually remove CCB_CONFIG block"
     fi
   elif grep -qE "$LEGACY_RULE_MARKER|## Codex Collaboration Rules|## Gemini" "$claude_md" 2>/dev/null; then
     echo "Removing legacy collaboration rules from CLAUDE.md..."
@@ -939,7 +939,7 @@ with open('$claude_md', 'w', encoding='utf-8') as f:
 "
       echo "Removed collaboration rules from CLAUDE.md"
     else
-      echo "⚠️ python3 required to clean CLAUDE.md, please manually remove collaboration rules"
+      echo "WARN: python3 required to clean CLAUDE.md, please manually remove collaboration rules"
     fi
   fi
 }
@@ -998,12 +998,12 @@ with open('$settings_file', 'w') as f:
       echo "Removed permission configuration from settings.json"
     fi
   else
-    echo "⚠️ python3 required to clean settings.json, please manually remove related permissions"
+    echo "WARN: python3 required to clean settings.json, please manually remove related permissions"
   fi
 }
 
 uninstall_all() {
-  echo "🧹 Starting ccb uninstall..."
+  echo "INFO: Starting ccb uninstall..."
 
   # 1. Remove project directory
   if [[ -d "$INSTALL_PREFIX" ]]; then
@@ -1045,8 +1045,8 @@ uninstall_all() {
   # 5. Remove permission configuration from settings.json
   uninstall_settings_permissions
 
-  echo "✅ Uninstall complete"
-  echo "   💡 Note: Dependencies (python3, tmux, wezterm, it2) were not removed"
+  echo "OK: Uninstall complete"
+  echo "   NOTE: Dependencies (python3, tmux, wezterm, it2) were not removed"
 }
 
 main() {
