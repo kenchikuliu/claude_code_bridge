@@ -28,6 +28,24 @@ def is_windows() -> bool:
     return platform.system() == "Windows"
 
 
+def _get_subprocess_kwargs():
+    """Get subprocess kwargs with hidden window on Windows."""
+    kwargs = {}
+    if os.name == "nt":
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        kwargs["startupinfo"] = startupinfo
+    return kwargs
+
+
+def _run(*args, **kwargs):
+    """Wrapper for subprocess.run that adds hidden window on Windows."""
+    kwargs.update(_get_subprocess_kwargs())
+    import subprocess as _sp
+    return _sp.run(*args, **kwargs)
+
+
 def is_wsl() -> bool:
     try:
         return "microsoft" in Path("/proc/version").read_text().lower()
@@ -186,35 +204,35 @@ class TmuxBackend(TerminalBackend):
             return
         # Fast-path for typical short, single-line commands (fewer tmux subprocess calls).
         if "\n" not in sanitized and len(sanitized) <= 200:
-            subprocess.run(["tmux", "send-keys", "-t", session, "-l", sanitized], check=True)
-            subprocess.run(["tmux", "send-keys", "-t", session, "Enter"], check=True)
+            _run(["tmux", "send-keys", "-t", session, "-l", sanitized], check=True)
+            _run(["tmux", "send-keys", "-t", session, "Enter"], check=True)
             return
 
         buffer_name = f"tb-{os.getpid()}-{int(time.time() * 1000)}"
         encoded = sanitized.encode("utf-8")
-        subprocess.run(["tmux", "load-buffer", "-b", buffer_name, "-"], input=encoded, check=True)
+        _run(["tmux", "load-buffer", "-b", buffer_name, "-"], input=encoded, check=True)
         try:
-            subprocess.run(["tmux", "paste-buffer", "-t", session, "-b", buffer_name, "-p"], check=True)
+            _run(["tmux", "paste-buffer", "-t", session, "-b", buffer_name, "-p"], check=True)
             enter_delay = _env_float("CCB_TMUX_ENTER_DELAY", 0.0)
             if enter_delay:
                 time.sleep(enter_delay)
-            subprocess.run(["tmux", "send-keys", "-t", session, "Enter"], check=True)
+            _run(["tmux", "send-keys", "-t", session, "Enter"], check=True)
         finally:
-            subprocess.run(["tmux", "delete-buffer", "-b", buffer_name], stderr=subprocess.DEVNULL)
+            _run(["tmux", "delete-buffer", "-b", buffer_name], stderr=subprocess.DEVNULL)
 
     def is_alive(self, session: str) -> bool:
-        result = subprocess.run(["tmux", "has-session", "-t", session], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = _run(["tmux", "has-session", "-t", session], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return result.returncode == 0
 
     def kill_pane(self, session: str) -> None:
-        subprocess.run(["tmux", "kill-session", "-t", session], stderr=subprocess.DEVNULL)
+        _run(["tmux", "kill-session", "-t", session], stderr=subprocess.DEVNULL)
 
     def activate(self, session: str) -> None:
-        subprocess.run(["tmux", "attach", "-t", session])
+        _run(["tmux", "attach", "-t", session])
 
     def create_pane(self, cmd: str, cwd: str, direction: str = "right", percent: int = 50, parent_pane: Optional[str] = None) -> str:
         session_name = f"ai-{int(time.time()) % 100000}-{os.getpid()}"
-        subprocess.run(["tmux", "new-session", "-d", "-s", session_name, "-c", cwd, cmd], check=True)
+        _run(["tmux", "new-session", "-d", "-s", session_name, "-c", cwd, cmd], check=True)
         return session_name
 
 
@@ -239,21 +257,21 @@ class Iterm2Backend(TerminalBackend):
             return
         # Similar to WezTerm: send text first, then send Enter
         # it2 session send sends text (without newline)
-        subprocess.run(
+        _run(
             [self._bin(), "session", "send", sanitized, "--session", session_id],
             check=True,
         )
         # Wait a bit for TUI to process input
         time.sleep(0.01)
         # Send Enter key (using \r)
-        subprocess.run(
+        _run(
             [self._bin(), "session", "send", "\r", "--session", session_id],
             check=True,
         )
 
     def is_alive(self, session_id: str) -> bool:
         try:
-            result = subprocess.run(
+            result = _run(
                 [self._bin(), "session", "list", "--json"],
                 capture_output=True,
                 text=True,
@@ -268,13 +286,13 @@ class Iterm2Backend(TerminalBackend):
             return False
 
     def kill_pane(self, session_id: str) -> None:
-        subprocess.run(
+        _run(
             [self._bin(), "session", "close", "--session", session_id, "--force"],
             stderr=subprocess.DEVNULL
         )
 
     def activate(self, session_id: str) -> None:
-        subprocess.run([self._bin(), "session", "focus", session_id])
+        _run([self._bin(), "session", "focus", session_id])
 
     def create_pane(self, cmd: str, cwd: str, direction: str = "right", percent: int = 50, parent_pane: Optional[str] = None) -> str:
         # iTerm2 split: vertical corresponds to right, horizontal to bottom
@@ -285,7 +303,7 @@ class Iterm2Backend(TerminalBackend):
         if parent_pane:
             args.extend(["--session", parent_pane])
 
-        result = subprocess.run(args, capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
+        result = _run(args, capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
         # it2 output format: "Created new pane: <session_id>"
         output = result.stdout.strip()
         if ":" in output:
@@ -300,12 +318,12 @@ class Iterm2Backend(TerminalBackend):
             full_cmd = f"cd {shlex.quote(cwd)} && {cmd}"
             time.sleep(0.2)  # Wait for pane ready
             # Use send + Enter, consistent with send_text
-            subprocess.run(
+            _run(
                 [self._bin(), "session", "send", full_cmd, "--session", new_session_id],
                 check=True
             )
             time.sleep(0.01)
-            subprocess.run(
+            _run(
                 [self._bin(), "session", "send", "\r", "--session", new_session_id],
                 check=True
             )
@@ -348,7 +366,7 @@ class WeztermBackend(TerminalBackend):
         # Retry mechanism for reliability (Windows native occasionally drops Enter)
         max_retries = 3
         for attempt in range(max_retries):
-            result = subprocess.run(
+            result = _run(
                 [*self._cli_base_args(), "send-text", "--pane-id", pane_id, "--no-paste"],
                 input=b"\r",
                 capture_output=True,
@@ -369,12 +387,12 @@ class WeztermBackend(TerminalBackend):
         # Use argv for short text; stdin for long text to avoid command-line length/escaping issues.
         if not has_newlines:
             if len(sanitized) <= 200:
-                subprocess.run(
+                _run(
                     [*self._cli_base_args(), "send-text", "--pane-id", pane_id, "--no-paste", sanitized],
                     check=True,
                 )
             else:
-                subprocess.run(
+                _run(
                     [*self._cli_base_args(), "send-text", "--pane-id", pane_id, "--no-paste"],
                     input=sanitized.encode("utf-8"),
                     check=True,
@@ -383,7 +401,7 @@ class WeztermBackend(TerminalBackend):
             return
 
         # Slow path: multiline or long text -> use paste mode (bracketed paste)
-        subprocess.run(
+        _run(
             [*self._cli_base_args(), "send-text", "--pane-id", pane_id],
             input=sanitized.encode("utf-8"),
             check=True,
@@ -398,7 +416,7 @@ class WeztermBackend(TerminalBackend):
 
     def _list_panes(self) -> list[dict]:
         try:
-            result = subprocess.run(
+            result = _run(
                 [*self._cli_base_args(), "list", "--format", "json"],
                 capture_output=True,
                 text=True,
@@ -438,7 +456,7 @@ class WeztermBackend(TerminalBackend):
     def get_text(self, pane_id: str, lines: int = 20) -> Optional[str]:
         """Get text content from pane (last N lines)."""
         try:
-            result = subprocess.run(
+            result = _run(
                 [*self._cli_base_args(), "get-text", "--pane-id", pane_id],
                 capture_output=True,
                 text=True,
@@ -459,7 +477,7 @@ class WeztermBackend(TerminalBackend):
     def send_key(self, pane_id: str, key: str) -> bool:
         """Send a special key (e.g., 'Escape', 'Enter') to pane."""
         try:
-            result = subprocess.run(
+            result = _run(
                 [*self._cli_base_args(), "send-text", "--pane-id", pane_id, "--no-paste"],
                 input=key.encode("utf-8"),
                 capture_output=True,
@@ -470,10 +488,10 @@ class WeztermBackend(TerminalBackend):
             return False
 
     def kill_pane(self, pane_id: str) -> None:
-        subprocess.run([*self._cli_base_args(), "kill-pane", "--pane-id", pane_id], stderr=subprocess.DEVNULL)
+        _run([*self._cli_base_args(), "kill-pane", "--pane-id", pane_id], stderr=subprocess.DEVNULL)
 
     def activate(self, pane_id: str) -> None:
-        subprocess.run([*self._cli_base_args(), "activate-pane", "--pane-id", pane_id])
+        _run([*self._cli_base_args(), "activate-pane", "--pane-id", pane_id])
 
     def create_pane(self, cmd: str, cwd: str, direction: str = "right", percent: int = 50, parent_pane: Optional[str] = None) -> str:
         args = [*self._cli_base_args(), "split-pane"]
@@ -490,7 +508,7 @@ class WeztermBackend(TerminalBackend):
             if wsl_unc_cwd is None and ("\\" in cwd or (len(cwd) > 2 and cwd[1] == ":")):
                 try:
                     wslpath_cmd = ["wslpath", "-a", cwd] if is_wsl() else ["wsl.exe", "wslpath", "-a", cwd]
-                    result = subprocess.run(wslpath_cmd, capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
+                    result = _run(wslpath_cmd, capture_output=True, text=True, check=True, encoding="utf-8", errors="replace")
                     wsl_cwd = result.stdout.strip()
                 except Exception:
                     pass
@@ -522,7 +540,7 @@ class WeztermBackend(TerminalBackend):
             run_cwd = None
             if is_wsl() and _is_windows_wezterm():
                 run_cwd = _choose_wezterm_cli_cwd()
-            result = subprocess.run(
+            result = _run(
                 args,
                 capture_output=True,
                 text=True,

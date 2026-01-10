@@ -6,6 +6,17 @@ import sys
 from pathlib import Path
 
 
+def _get_subprocess_kwargs():
+    """Get subprocess kwargs with hidden window on Windows."""
+    kwargs = {}
+    if os.name == "nt":
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        kwargs["startupinfo"] = startupinfo
+    return kwargs
+
+
 def get_backend_env() -> str | None:
     """Get BackendEnv from env var or .ccb-config.json"""
     v = (os.environ.get("CCB_BACKEND_ENV") or "").strip().lower()
@@ -28,7 +39,8 @@ def _wsl_probe_distro_and_home() -> tuple[str, str]:
     try:
         r = subprocess.run(
             ["wsl.exe", "-e", "sh", "-lc", "echo $WSL_DISTRO_NAME; echo $HOME"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
+            **_get_subprocess_kwargs()
         )
         if r.returncode == 0:
             lines = r.stdout.strip().split("\n")
@@ -39,7 +51,8 @@ def _wsl_probe_distro_and_home() -> tuple[str, str]:
     try:
         r = subprocess.run(
             ["wsl.exe", "-l", "-q"],
-            capture_output=True, text=True, encoding="utf-16-le", errors="replace", timeout=5
+            capture_output=True, text=True, encoding="utf-16-le", errors="replace", timeout=5,
+            **_get_subprocess_kwargs()
         )
         if r.returncode == 0:
             for line in r.stdout.strip().split("\n"):
@@ -55,7 +68,8 @@ def _wsl_probe_distro_and_home() -> tuple[str, str]:
     try:
         r = subprocess.run(
             ["wsl.exe", "-d", distro, "-e", "sh", "-lc", "echo $HOME"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5,
+            **_get_subprocess_kwargs()
         )
         home = r.stdout.strip() if r.returncode == 0 else "/root"
     except Exception:

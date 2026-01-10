@@ -92,15 +92,23 @@ def compute_opencode_project_id(work_dir: Path) -> str:
         if not shutil.which("git"):
             return "global"
 
+        kwargs = {
+            "cwd": str(git_root or cwd),
+            "text": True,
+            "encoding": "utf-8",
+            "errors": "replace",
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.DEVNULL,
+            "check": False,
+        }
+        if os.name == "nt":
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+            kwargs["startupinfo"] = startupinfo
         proc = subprocess.run(
             ["git", "rev-list", "--max-parents=0", "--all"],
-            cwd=str(git_root or cwd),
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            check=False,
+            **kwargs
         )
         roots = [line.strip() for line in (proc.stdout or "").splitlines() if line.strip()]
         roots.sort()
