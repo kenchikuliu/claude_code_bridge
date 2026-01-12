@@ -14,6 +14,14 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12"]
 
+  test-wsl:
+    name: WSL / py${{ matrix.python-version }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,4 +56,39 @@ jobs:
           dir lib
           type lib\terminal.py | findstr /N "import"
         shell: cmd
+
+  test-wsl:
+    name: WSL / py${{ matrix.python-version }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup WSL
+        uses: Vampire/setup-wsl@v3
+        with:
+          distribution: Ubuntu-22.04
+
+      - name: Install Python and dependencies in WSL
+        shell: wsl-bash {0}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python${{ matrix.python-version }} python${{ matrix.python-version }}-venv python3-pip tmux
+          python${{ matrix.python-version }} -m pip install --upgrade pip
+          python${{ matrix.python-version }} -m pip install pytest
+
+      - name: Syntax check in WSL
+        shell: wsl-bash {0}
+        run: python${{ matrix.python-version }} -m compileall -q lib bin ccb
+
+      - name: Run tests in WSL with tmux
+        shell: wsl-bash {0}
+        run: |
+          export TERM=xterm-256color
+          python${{ matrix.python-version }} -m pytest test/ -v --tb=short
 
