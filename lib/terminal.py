@@ -324,15 +324,34 @@ class TmuxBackend(TerminalBackend):
 
         pct = max(1, min(99, int(percent)))
         try:
+            # Prefer `-pNN` to avoid tmux versions/environments that misparse `-p NN` as "size missing".
             cp = self._tmux_run(
-                ["split-window", flag, "-p", str(pct), "-t", parent_pane_id, "-P", "-F", "#{pane_id}"],
+                ["split-window", flag, f"-p{pct}", "-t", parent_pane_id, "-P", "-F", "#{pane_id}"],
                 check=True,
                 capture=True,
             )
         except subprocess.CalledProcessError as e:
-            stderr = (e.stderr or "").strip() if hasattr(e, "stderr") else ""
+            out = (getattr(e, "stdout", "") or "").strip()
+            err = (getattr(e, "stderr", "") or "").strip()
+            msg = err or out
+
+            # Last-resort fallback: some tmux builds still choke on explicit sizing,
+            # but succeed with default 50% split.
+            if "size missing" in msg.lower():
+                try:
+                    cp = self._tmux_run(
+                        ["split-window", flag, "-t", parent_pane_id, "-P", "-F", "#{pane_id}"],
+                        check=True,
+                        capture=True,
+                    )
+                    pane_id = (cp.stdout or "").strip()
+                    if not self._looks_like_pane_id(pane_id):
+                        raise RuntimeError(f"tmux split-window did not return pane_id: {pane_id!r}")
+                    return pane_id
+                except Exception:
+                    pass
             raise RuntimeError(
-                f"tmux split-window failed (exit {e.returncode}): {stderr or 'no stderr'}\n"
+                f"tmux split-window failed (exit {e.returncode}): {msg or 'no stdout/stderr'}\n"
                 f"Pane: {parent_pane_id}, size: {pane_size}, direction: {direction_norm}\n"
                 f"Command: {' '.join(e.cmd)}\n"
                 f"Hint: If the pane is zoomed, press Prefix+z to unzoom; also try enlarging terminal window."
