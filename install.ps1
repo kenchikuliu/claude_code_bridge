@@ -582,6 +582,10 @@ function Set-WezTermDefaultShellToPowerShell {
   }
 
   $content = Get-Content -Raw -Path $weztermConfig
+  $hasDefaultProg = $content -match "default_prog\\s*="
+  if ($hasDefaultProg) {
+    return
+  }
   $hasConfigVar = ($content -match "(?m)^\\s*(local\\s+)?config\\s*=") -or ($content -match "(?m)^\\s*return\\s+config\\s*$")
   if (-not $hasConfigVar) {
     Write-Warning "WezTerm config doesn't appear to use a 'config' variable; skipping automatic edit."
@@ -599,7 +603,6 @@ $($script:CCB_WEZTERM_END_MARKER)
 "@
 
   $alreadyPowerShell = $content -match "default_prog\\s*=\\s*\\{\\s*'?(pwsh\\.exe|powershell\\.exe)'?\\s*\\}"
-  $hasDefaultProg = $content -match "default_prog\\s*="
 
   $shouldApply = $false
   if ($content -match [regex]::Escape($script:CCB_WEZTERM_START_MARKER)) {

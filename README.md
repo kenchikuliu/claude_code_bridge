@@ -2,9 +2,9 @@
 
 # Claude Code Bridge (ccb) v5.0.0
 
-**Silky Smooth Claude & Codex & Gemini Collaboration via Split-Pane Terminal**
-
-**Build a real AI expert team. Give Claude Code / Codex / Gemini / OpenCode partners that never forget.**
+**New Multi-Model Collaboration Tool via Split-Pane Terminal**
+**Claude & Codex & Gemini & OpenCode**
+**Ultra-low token real-time communication, unleashing full CLI power**
 
 <p>
   <img src="https://img.shields.io/badge/Every_Interaction_Visible-096DD9?style=for-the-badge" alt="Every Interaction Visible">
