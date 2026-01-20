@@ -20,10 +20,15 @@
 
 ![Showcase](assets/show.png)
 
+<details>
+<summary><b>演示动画</b></summary>
+
 <img src="assets/readme_previews/video2.gif" alt="任意终端窗口协作演示" width="900">
 
 
 <img src="assets/readme_previews/video1.gif" alt="融合vscode使用" width="900">
+
+</details>
 
 
 </div>

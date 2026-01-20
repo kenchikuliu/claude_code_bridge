@@ -23,9 +23,14 @@
 
 ![Showcase](assets/show.png)
 
+<details>
+<summary><b>Demo animations</b></summary>
+
 <img src="assets/readme_previews/video2.gif" alt="Any-terminal collaboration demo" width="900">
 
 <img src="assets/readme_previews/video1.gif" alt="VS Code integration demo" width="900">
+
+</details>
 
 </div>
 
