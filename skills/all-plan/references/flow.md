@@ -6,17 +6,6 @@ Collaborative planning with all mounted CLIs (Claude, Codex, Gemini, OpenCode) f
 
 ---
 
-## Brainstorming Principles
-
-This enhanced all-plan integrates Superpowers brainstorming:
-- **Socratic Ladder**: Deep requirement mining through structured questions
-- **Superpowers Lenses**: Systematic alternative exploration
-- **Anti-pattern Detection**: Proactive risk identification
-
-**Flexibility**: All additions are optional. Skip/condense when requirements are clear.
-
----
-
 ## Input Parameters
 
 From `$ARGUMENTS`:
@@ -29,32 +18,142 @@ From `$ARGUMENTS`:
 
 ### Phase 1: Requirement Refinement & Project Analysis
 
-**1.1 Clarify Requirements**
+**1.1 Structured Clarification (Option-Based)**
 
-Ask user for clarification if needed:
-- What is the core problem to solve?
-- What are the constraints (time, resources, compatibility)?
-- What are the success criteria?
+Use the **5-Dimension Planning Readiness Model** to ensure comprehensive requirement capture.
 
-**Socratic Ladder** (Answer 5-7 key questions):
+#### Readiness Dimensions (100 pts total)
 
-*Note: If requirements are already clear and constraints explicit, you may condense or skip this section. However, always confirm success criteria.*
+| Dimension | Weight | Focus | Priority |
+|-----------|--------|-------|----------|
+| Problem Clarity | 30pts | What problem? Why solve it? | 1 |
+| Functional Scope | 25pts | What does it DO? Key features | 2 |
+| Success Criteria | 20pts | How to verify done? | 3 |
+| Constraints | 15pts | Time, resources, compatibility | 4 |
+| Priority/MVP | 10pts | What first? Phased delivery? | 5 |
 
-1. What problem are we solving? (Core problem)
-2. Why now? What changes if we don't do this? (Urgency/impact)
-3. What are we NOT doing? (Scope boundaries)
-4. What could go wrong? (Failure modes)
-5. What are the hidden constraints? (Non-functional requirements)
-6. What alternatives exist? (Other approaches)
-7. How will we know it works? (Success metrics)
+#### Clarification Flow
 
-**Superpowers Lenses** (Explore 2-3 alternative framings):
+```
+ROUND 1:
+  1. Parse initial requirement
+  2. Identify 2 lowest-confidence dimensions (use Priority order for ties)
+  3. Ask 2 questions using AskUserQuestion (1 per dimension)
+  4. Update dimension scores based on answers
+  5. Display Scorecard to user
 
-*Note: Use at least one lens; skip any that contradict project constraints.*
+IF readiness_score >= 80: Skip Round 2, proceed to 1.2
+ELSE:
+  ROUND 2:
+    1. Re-identify 2 lowest-scoring dimensions
+    2. Ask 2 more questions
+    3. Update scores
+    4. Proceed regardless (with gap summary)
 
-- Amplify 10x: What if scale/performance must be 10x better?
-- Remove dependency: What if we can't use [key technology]?
-- Invert flow: What if we reverse the typical approach?
+QUICK-START OVERRIDE:
+  - User can select "Proceed anyway" at any point
+  - All dimensions marked as "assumption" in summary
+```
+
+#### Option Bank Reference
+
+**Problem Clarity (30pts)**
+```
+Question: "What type of problem are you solving?"
+Options:
+  A. "Specific bug or defect with clear reproduction" → 27pts
+  B. "New feature with defined business value" → 27pts
+  C. "Performance/optimization improvement" → 24pts
+  D. "General improvement or refactoring" → 18pts
+  E. "Not sure yet - need exploration" → 9pts (flag)
+  F. "Other: ___" → 12pts (flag)
+```
+
+**Functional Scope (25pts)**
+```
+Question: "What is the scope of functionality?"
+Options:
+  A. "Single focused component/module" → 23pts
+  B. "Multiple related components" → 20pts
+  C. "Cross-cutting system change" → 18pts
+  D. "Unclear - need codebase analysis" → 10pts (flag)
+  E. "Other: ___" → 10pts (flag)
+```
+
+**Success Criteria (20pts)**
+```
+Question: "How will you verify success?"
+Options:
+  A. "Automated tests (unit/integration/e2e)" → 18pts
+  B. "Performance benchmarks with targets" → 18pts
+  C. "Manual testing with checklist" → 14pts
+  D. "User feedback/acceptance" → 12pts
+  E. "Not defined yet" → 6pts (flag)
+  F. "Other: ___" → 8pts (flag)
+```
+
+**Constraints (15pts)**
+```
+Question: "What are the primary constraints?"
+Options:
+  A. "Time-sensitive (deadline driven)" → 14pts
+  B. "Must maintain backward compatibility" → 14pts
+  C. "Resource/budget limited" → 12pts
+  D. "Security/compliance critical" → 14pts
+  E. "No specific constraints" → 10pts
+  F. "Other: ___" → 8pts (flag)
+```
+
+**Priority/MVP (10pts)**
+```
+Question: "What is the delivery approach?"
+Options:
+  A. "MVP first, iterate later" → 9pts
+  B. "Full feature, single release" → 9pts
+  C. "Phased rollout planned" → 9pts
+  D. "Exploratory - scope TBD" → 5pts (flag)
+  E. "Other: ___" → 5pts (flag)
+```
+
+#### Gap Classification Rules
+
+| Dimension Score | Classification | Handling |
+|-----------------|----------------|----------|
+| ≥70% of weight | ✓ Defined | Include in Design Brief |
+| 50-69% of weight | ⚠️ Assumption | Carry forward as risk |
+| <50% of weight | 🚫 Gap | Flag in brief, may need validation |
+
+Example thresholds:
+- Problem Clarity: ≥21 Defined, 15-20 Assumption, <15 Gap
+- Functional Scope: ≥18 Defined, 13-17 Assumption, <13 Gap
+- Success Criteria: ≥14 Defined, 10-13 Assumption, <10 Gap
+- Constraints: ≥11 Defined, 8-10 Assumption, <8 Gap
+- Priority/MVP: ≥7 Defined, 5-6 Assumption, <5 Gap
+
+#### Clarification Summary Output
+
+After clarification, generate:
+
+```
+CLARIFICATION SUMMARY
+=====================
+Readiness Score: [X]/100
+
+Dimensions:
+- Problem Clarity: [X]/30 [✓/⚠️/🚫]
+- Functional Scope: [X]/25 [✓/⚠️/🚫]
+- Success Criteria: [X]/20 [✓/⚠️/🚫]
+- Constraints: [X]/15 [✓/⚠️/🚫]
+- Priority/MVP: [X]/10 [✓/⚠️/🚫]
+
+Assumptions & Gaps:
+- [Dimension]: [assumption or gap description]
+- [Dimension]: [assumption or gap description]
+
+Proceeding to project analysis...
+```
+
+Save as `clarification_summary`.
 
 **1.2 Analyze Project Context**
 
@@ -76,19 +175,33 @@ Use WebSearch to gather relevant information.
 
 **1.4 Formulate Complete Brief**
 
-Create a comprehensive design brief:
+Create a comprehensive design brief incorporating clarification results:
+
 ```
 DESIGN BRIEF
 ============
+Readiness Score: [X]/100
+
 Problem: [clear problem statement]
 Context: [project context, tech stack, constraints]
+
 Requirements:
 - [requirement 1]
 - [requirement 2]
 - [requirement 3]
+
 Success Criteria:
 - [criterion 1]
 - [criterion 2]
+
+Assumptions (from clarification):
+- [assumption 1]
+- [assumption 2]
+
+Gaps to Validate:
+- [gap 1]
+- [gap 2]
+
 Research Findings: [if applicable]
 ```
 
@@ -96,40 +209,13 @@ Save as `design_brief`.
 
 ---
 
-### Phase 1.5: CLI Availability Check
-
-**Check which CLIs are available:**
-
-```bash
-# Check Codex
-cping && echo "Codex: available" || echo "Codex: unavailable"
-
-# Check Gemini
-gping && echo "Gemini: available" || echo "Gemini: unavailable"
-
-# Check OpenCode
-oping && echo "OpenCode: available" || echo "OpenCode: unavailable"
-```
-
-**Determine dispatch strategy:**
-- If 2+ other CLIs available: Proceed with full parallel design (Phase 2)
-- If 1 other CLI available: Proceed with simplified parallel design
-- If 0 other CLIs available: Skip to Phase 5 (Claude-only design)
-
-Record available CLIs for Phase 2 dispatch.
-
----
-
 ### Phase 2: Parallel Independent Design
 
-Send the design brief to available mounted CLIs for independent design.
+Send the design brief to all other mounted CLIs for independent design.
 
-**Note**: Only dispatch to CLIs that passed the availability check in Phase 1.5.
-
-**2.1 Dispatch to Codex** (if available)
+**2.1 Dispatch to Codex**
 
 ```bash
-# Only run if Codex is available
 Bash(cask <<'EOF'
 Design a solution for this requirement:
 
@@ -137,23 +223,20 @@ Design a solution for this requirement:
 
 Provide:
 - Goal (1 sentence)
-- Primary Solution (your recommended approach)
-- Alternative Approach (using one Superpowers Lens or different framing)
+- Architecture approach
 - Implementation steps (3-7 key steps)
 - Technical considerations
-- Tradeoffs (pros/cons of each approach)
 - Potential risks
 - Acceptance criteria (max 3)
 
-Be specific and concrete. Focus on design alternatives and tradeoffs.
+Be specific and concrete.
 EOF
 , run_in_background=true)
 ```
 
-**2.2 Dispatch to Gemini** (if available)
+**2.2 Dispatch to Gemini**
 
 ```bash
-# Only run if Gemini is available
 Bash(gask <<'EOF'
 Design a solution for this requirement:
 
@@ -161,23 +244,20 @@ Design a solution for this requirement:
 
 Provide:
 - Goal (1 sentence)
-- Primary Solution (your recommended approach)
-- Alternative Approach (using one Superpowers Lens or different framing)
+- Architecture approach
 - Implementation steps (3-7 key steps)
 - Technical considerations
-- Tradeoffs (pros/cons of each approach)
 - Potential risks
 - Acceptance criteria (max 3)
 
-Be specific and concrete. Focus on design alternatives and tradeoffs.
+Be specific and concrete.
 EOF
 , run_in_background=true)
 ```
 
-**2.3 Dispatch to OpenCode** (if available)
+**2.3 Dispatch to OpenCode**
 
 ```bash
-# Only run if OpenCode is available
 Bash(oask <<'EOF'
 Design a solution for this requirement:
 
@@ -185,15 +265,13 @@ Design a solution for this requirement:
 
 Provide:
 - Goal (1 sentence)
-- Primary Solution (your recommended approach)
-- Alternative Approach (using one Superpowers Lens or different framing)
+- Architecture approach
 - Implementation steps (3-7 key steps)
 - Technical considerations
-- Tradeoffs (pros/cons of each approach)
 - Potential risks
 - Acceptance criteria (max 3)
 
-Be specific and concrete. Focus on design alternatives and tradeoffs.
+Be specific and concrete.
 EOF
 , run_in_background=true)
 ```
@@ -216,17 +294,14 @@ Save as `claude_design`.
 
 **3.1 Wait for All Responses**
 
-Collect designs from available CLIs only:
-- If Codex available: Codex design → save as `codex_design`
-- If Gemini available: Gemini design → save as `gemini_design`
-- If OpenCode available: OpenCode design → save as `opencode_design`
-- Claude design (always) → `claude_design`
-
-**Note**: If no other CLIs are available (Claude-only), skip to Phase 5 with Claude's design.
+Use `TaskOutput` to wait for all background tasks:
+- Codex design → save as `codex_design`
+- Gemini design → save as `gemini_design`
+- OpenCode design → save as `opencode_design`
 
 **3.2 Comparative Analysis**
 
-Analyze all available designs (Claude + available CLIs):
+Analyze all four designs (Claude, Codex, Gemini, OpenCode):
 
 Create a comparison matrix:
 ```
@@ -260,21 +335,13 @@ DESIGN COMPARISON
 6. Acceptance Criteria
    - Overlapping criteria
    - Additional criteria to consider
-
-7. Anti-pattern Analysis
-   - Common anti-patterns identified across all designs
-   - Unique anti-patterns from each CLI
-   - Mitigation strategies comparison
-   - Critical risks flagged by multiple CLIs
 ```
 
 Save as `comparative_analysis`.
 
 ---
 
-### Phase 4: Iterative Refinement
-
-**Note**: This phase requires at least one other CLI for review. If Codex is available, use Codex. Otherwise, use the first available CLI (Gemini or OpenCode). If no other CLIs available, skip to Phase 5.
+### Phase 4: Iterative Refinement with Codex
 
 **4.1 Draft Merged Design**
 
@@ -305,10 +372,6 @@ Acceptance Criteria:
 - [criterion 2]
 - [criterion 3]
 
-Discarded Alternatives (brief):
-- [Alternative 1]: [1-line reason for rejection]
-- [Alternative 2]: [1-line reason for rejection]
-
 Open Questions:
 - [question 1]
 - [question 2]
@@ -318,14 +381,8 @@ Save as `merged_design_v1`.
 
 **4.2 Discussion Round 1 - Review & Critique**
 
-**Select reviewer CLI** (in priority order):
-1. If Codex available: use `cask`
-2. Else if Gemini available: use `gask`
-3. Else if OpenCode available: use `oask`
-
 ```bash
-# Use the selected reviewer CLI (cask/gask/oask). Reuse it in Round 2.
-Bash(<reviewer_cli> <<'EOF'
+Bash(cask <<'EOF'
 Review this merged design based on all CLI inputs:
 
 COMPARATIVE ANALYSIS:
@@ -346,15 +403,14 @@ EOF
 , run_in_background=true)
 ```
 
-Wait with `TaskOutput`. Save as `reviewer_feedback_1`.
+Wait with `TaskOutput`. Save as `codex_review_1`.
 
 **4.3 Discussion Round 2 - Resolve & Finalize**
 
-Based on reviewer's feedback, refine the design:
+Based on Codex's review, refine the design:
 
 ```bash
-# Use the same reviewer CLI as Round 1
-Bash(<reviewer_cli> <<'EOF'
+Bash(cask <<'EOF'
 Refined design based on your feedback:
 
 MERGED DESIGN v2:
@@ -372,7 +428,7 @@ EOF
 , run_in_background=true)
 ```
 
-Wait with `TaskOutput`. Save as `reviewer_feedback_2`.
+Wait with `TaskOutput`. Save as `codex_review_2`.
 
 ---
 
@@ -380,83 +436,168 @@ Wait with `TaskOutput`. Save as `reviewer_feedback_2`.
 
 **5.1 Finalize Design**
 
-Incorporate reviewer's final feedback (if any) and create the complete solution design.
+Incorporate Codex's final feedback and create the complete solution design.
 
-**5.2 Output Format**
+**5.2 Save Plan Document**
 
-Return the final comprehensive plan:
+Write the final plan to a markdown file using the Write tool:
 
-```
-FINAL SOLUTION DESIGN
-=====================
+**File path**: `plans/{feature-name}-plan.md`
 
-## Goal
-[Clear, concise goal statement]
+Use this template:
 
-## Architecture
-[Chosen architecture approach with rationale]
+```markdown
+# {Feature Name} - Solution Design
 
-## Implementation Plan
+> Generated by all-plan collaborative design process
 
-### Step 1: [Title]
-- Actions: [specific actions]
-- Deliverables: [what will be produced]
-- Dependencies: [what's needed first]
+## Overview
 
-### Step 2: [Title]
-- Actions: [specific actions]
-- Deliverables: [what will be produced]
-- Dependencies: [what's needed first]
+**Goal**: [Clear, concise goal statement]
 
-[Continue for all steps...]
+**Readiness Score**: [X]/100
 
-## Technical Considerations
-- [consideration 1]
-- [consideration 2]
-- [consideration 3]
+**Generated**: [Date]
 
-## Risk Management
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| [risk 1] | [High/Med/Low] | [mitigation strategy] |
-| [risk 2] | [High/Med/Low] | [mitigation strategy] |
+---
 
-## Acceptance Criteria
+## Requirements Summary
+
+### Problem Statement
+[Clear problem description]
+
+### Scope
+[What's in scope and out of scope]
+
+### Success Criteria
 - [ ] [criterion 1]
 - [ ] [criterion 2]
 - [ ] [criterion 3]
 
-## Design Contributors
-- Claude: [key contributions]
-- Codex: [key contributions]
-- Gemini: [key contributions]
-- OpenCode: [key contributions]
+### Constraints
+- [constraint 1]
+- [constraint 2]
 
-## Validation Checklist
-Before finalizing:
-- [ ] Total flow.md length < 500 lines
-- [ ] All Phase outputs unchanged (backward compatible)
-- [ ] No new required inputs (backward compatible)
-- [ ] Socratic Ladder questions answered (or skip justified)
-- [ ] At least one alternative explored
-- [ ] Anti-patterns identified and mitigated
-- [ ] Design rationale documented
+### Assumptions
+- [assumption 1 from clarification]
+- [assumption 2 from clarification]
+
+---
+
+## Architecture
+
+### Approach
+[Chosen architecture approach with rationale]
+
+### Key Components
+- **[Component 1]**: [description]
+- **[Component 2]**: [description]
+
+### Data Flow
+[If applicable, describe data flow]
+
+---
+
+## Implementation Plan
+
+### Step 1: [Title]
+- **Actions**: [specific actions]
+- **Deliverables**: [what will be produced]
+- **Dependencies**: [what's needed first]
+
+### Step 2: [Title]
+- **Actions**: [specific actions]
+- **Deliverables**: [what will be produced]
+- **Dependencies**: [what's needed first]
+
+### Step 3: [Title]
+- **Actions**: [specific actions]
+- **Deliverables**: [what will be produced]
+- **Dependencies**: [what's needed first]
+
+[Continue for all steps...]
+
+---
+
+## Technical Considerations
+
+- [consideration 1]
+- [consideration 2]
+- [consideration 3]
+
+---
+
+## Risk Management
+
+| Risk | Impact | Likelihood | Mitigation |
+|------|--------|------------|------------|
+| [risk 1] | High/Med/Low | High/Med/Low | [strategy] |
+| [risk 2] | High/Med/Low | High/Med/Low | [strategy] |
+
+---
+
+## Acceptance Criteria
+
+- [ ] [criterion 1]
+- [ ] [criterion 2]
+- [ ] [criterion 3]
+
+---
+
+## Design Contributors
+
+| CLI | Key Contributions |
+|-----|-------------------|
+| Claude | [contributions] |
+| Codex | [contributions] |
+| Gemini | [contributions] |
+| OpenCode | [contributions] |
+
+---
+
+## Appendix
+
+### Clarification Summary
+[Include the clarification summary from Phase 1.1]
+
+### Alternative Approaches Considered
+[Brief notes on approaches that were evaluated but not chosen]
+```
+
+**5.3 Output to User**
+
+After saving the file, display to user:
+
+```
+PLAN COMPLETE
+=============
+
+✓ Plan saved to: plans/{feature-name}-plan.md
+
+Summary:
+- Goal: [1-sentence goal]
+- Steps: [N] implementation steps
+- Risks: [N] identified with mitigations
+- Readiness: [X]/100
+
+Next: Review the plan and proceed with implementation when ready.
 ```
 
 ---
 
 ## Principles
 
-1. **Comprehensive Requirement Analysis**: Thoroughly understand and refine requirements before design
-2. **True Independence**: All CLIs design independently without seeing others' work first
-3. **Diverse Perspectives**: Leverage unique strengths of each CLI (Claude: context, Codex: code, Gemini: analysis, OpenCode: alternatives)
-4. **Evidence-Based Synthesis**: Merge based on comparative analysis, not arbitrary choices
-5. **Iterative Refinement**: Use reviewer discussion to validate and improve merged design
-6. **Concrete Deliverables**: Output actionable implementation plan, not just discussion notes
-7. **Attribution**: Acknowledge contributions from each CLI to maintain transparency
-8. **Research When Needed**: Don't hesitate to use WebSearch for external knowledge
-9. **Max 2 Iteration Rounds**: Avoid endless discussion; converge on practical solution
-10. **Plan Mode Only**: No code edits or file operations in this skill
+1. **Structured Clarification**: Use option-based questions to systematically capture requirements
+2. **Readiness Scoring**: Quantify requirement completeness before proceeding
+3. **True Independence**: All CLIs design independently without seeing others' work first
+4. **Diverse Perspectives**: Leverage unique strengths of each CLI
+5. **Evidence-Based Synthesis**: Merge based on comparative analysis, not arbitrary choices
+6. **Iterative Refinement**: Use Codex discussion to validate and improve merged design
+7. **Concrete Deliverables**: Output actionable plan document, not just discussion notes
+8. **Attribution**: Acknowledge contributions from each CLI to maintain transparency
+9. **Research When Needed**: Don't hesitate to use WebSearch for external knowledge
+10. **Max 2 Iteration Rounds**: Avoid endless discussion; converge on practical solution
+11. **Document Output**: Always save final plan as markdown file
 
 ---
 
@@ -467,3 +608,4 @@ Before finalizing:
 - All background tasks should use `run_in_background=true`
 - Always wait for task completion with `TaskOutput` before proceeding
 - If any CLI is not available, proceed with available CLIs and note the absence
+- Plans are saved to `plans/` directory with descriptive filenames
