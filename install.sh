@@ -615,6 +615,16 @@ install_claude_skills() {
     local dst_skill_md="$dst_dir/SKILL.md"
     mkdir -p "$dst_dir"
     cp -f "$src_skill_md" "$dst_skill_md"
+
+    # Copy additional subdirectories (e.g., references/) if they exist
+    for subdir in "$skill_dir"*/; do
+      if [[ -d "$subdir" ]]; then
+        local subdir_name
+        subdir_name=$(basename "$subdir")
+        cp -rf "$subdir" "$dst_dir/$subdir_name"
+      fi
+    done
+
     echo "  Updated skill: $skill_name"
   done
 
@@ -655,6 +665,16 @@ install_codex_skills() {
     local dst_skill_md="$dst_dir/SKILL.md"
     mkdir -p "$dst_dir"
     cp -f "$src_skill_md" "$dst_skill_md"
+
+    # Copy additional subdirectories (e.g., references/) if they exist
+    for subdir in "$skill_dir"*/; do
+      if [[ -d "$subdir" ]]; then
+        local subdir_name
+        subdir_name=$(basename "$subdir")
+        cp -rf "$subdir" "$dst_dir/$subdir_name"
+      fi
+    done
+
     echo "  Updated Codex skill: $skill_name"
   done
   echo "Updated Codex skills directory: $skills_dst"

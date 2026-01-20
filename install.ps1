@@ -379,6 +379,15 @@ function Install-CodexSkills {
     }
 
     Copy-Item -Force $srcSkillMd $dstSkillMd
+
+    # Copy additional subdirectories (e.g., references/) if they exist
+    Get-ChildItem -Path $srcDir -Directory | ForEach-Object {
+      $subDirName = $_.Name
+      $srcSubDir = $_.FullName
+      $dstSubDir = Join-Path $dstDir $subDirName
+      Copy-Item -Recurse -Force $srcSubDir $dstSubDir
+    }
+
     Write-Host "  Updated Codex skill: $skillName"
   }
   Write-Host "Updated Codex skills directory: $skillsDst"
@@ -433,6 +442,15 @@ function Install-ClaudeConfig {
       }
 
       Copy-Item -Force $srcSkillMd $dstSkillMd
+
+      # Copy additional subdirectories (e.g., references/) if they exist
+      Get-ChildItem -Path $srcDir -Directory | ForEach-Object {
+        $subDirName = $_.Name
+        $srcSubDir = $_.FullName
+        $dstSubDir = Join-Path $dstDir $subDirName
+        Copy-Item -Recurse -Force $srcSubDir $dstSubDir
+      }
+
       Write-Host "  Updated skill: $skillName"
     }
 

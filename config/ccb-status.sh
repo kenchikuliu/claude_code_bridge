@@ -99,6 +99,19 @@ except Exception:
 providers = {
     "claude","codex","opencode","gemini","oc","cc","ge",
 }
+DESCRIPTIVE_KEYS = (
+    "plan","scheme","role","role_type","roleType","roleset",
+    "type","profile","group","team","mode","name","roles",
+)
+PROVIDER_KEYS = (
+    "executor","reviewer","documenter","designer",
+    "searcher","web_searcher","repo_searcher","git_manager",
+)
+def _meta_name(obj):
+    meta = obj.get("_meta")
+    if isinstance(meta, dict):
+        return _normalize(meta.get("name"), allow_provider=True)
+    return ""
 def _is_providerish(value):
     if not isinstance(value, str):
         return False
@@ -107,32 +120,45 @@ def _is_providerish(value):
         return False
     tokens = re.findall(r"[a-z0-9_]+", val.lower())
     return bool(tokens) and all(tok in providers for tok in tokens)
-def _normalize(val):
+def _normalize(val, allow_provider=False):
     if isinstance(val, str):
-        return "" if _is_providerish(val) else val
+        val = val.strip()
+        if not val:
+            return ""
+        if not allow_provider and _is_providerish(val):
+            return ""
+        return val
     if isinstance(val, (list, tuple)):
-        items = [v for v in (_normalize(v) for v in val) if v]
+        items = [v for v in (_normalize(v, allow_provider=allow_provider) for v in val) if v]
         return ",".join(items)
     if isinstance(val, dict):
-        for key in ("plan","scheme","role","role_type","roleType","roleset","type","profile","group","team","mode","name"):
+        keys = DESCRIPTIVE_KEYS + (PROVIDER_KEYS if allow_provider else ())
+        for key in keys:
             if key in val:
-                out = _normalize(val.get(key))
+                out = _normalize(val.get(key), allow_provider=allow_provider)
                 if out:
                     return out
     return ""
-def _first_value(keys):
+def _first_value(keys, allow_provider=False):
     for key in keys:
-        out = _normalize(data.get(key))
+        out = _normalize(data.get(key), allow_provider=allow_provider)
         if out:
             return out
     return ""
-out = _first_value(("plan","scheme","role","role_type","roleType","roleset","type","profile","group","team","mode","roles"))
+out = _meta_name(data)
+if not out:
+    out = _first_value(DESCRIPTIVE_KEYS)
+if not out:
+    out = _first_value(PROVIDER_KEYS, allow_provider=True)
 if out:
     print(out)
 PY
 )"
             else
-                role="$(grep -Eo '"(plan|scheme|role_type|roleType|roleset|role|type|profile|group|team|mode|roles)"\\s*:\\s*"[^"]+"' "$cfg" 2>/dev/null | head -n1 | sed -E 's/.*:"([^"]+)"/\\1/' || true)"
+                local role_key=""
+                kv="$(grep -Eo '"(plan|scheme|role_type|roleType|roleset|role|type|profile|group|team|mode|name|roles|executor|reviewer|documenter|designer|searcher|web_searcher|repo_searcher|git_manager)"\\s*:\\s*"[^"]+"' "$cfg" 2>/dev/null | head -n1 || true)"
+                role="$(printf '%s' "$kv" | sed -E 's/.*:"([^"]+)"/\\1/' || true)"
+                role_key="$(printf '%s' "$kv" | sed -E 's/^"([^"]+)".*/\\1/' || true)"
                 if [[ -n "$role" ]]; then
                     local role_lc
                     role_lc="$(printf '%s' "$role" | tr '[:upper:]' '[:lower:]')"
@@ -146,6 +172,11 @@ PY
                             *) providerish=0; break ;;
                         esac
                     done
+                    case "$role_key" in
+                        name|executor|reviewer|documenter|designer|searcher|web_searcher|repo_searcher|git_manager)
+                            providerish=0
+                            ;;
+                    esac
                     if (( providerish )); then
                         role=""
                     fi

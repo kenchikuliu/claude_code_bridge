@@ -1,6 +1,6 @@
 <div align="center">
 
-# Claude Code Bridge (ccb) v5.0.0
+# Claude Code Bridge (ccb) v5.0.1
 
 **New Multi-Model Collaboration Tool via Split-Pane Terminal**
 **Claude & Codex & Gemini & OpenCode**
@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Every_Model_Controllable-CF1322?style=for-the-badge" alt="Every Model Controllable">
 </p>
 
-[![Version](https://img.shields.io/badge/version-5.0.0-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-5.0.1-orange.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![CI](https://github.com/bfly123/claude_code_bridge/actions/workflows/test.yml/badge.svg)](https://github.com/bfly123/claude_code_bridge/actions/workflows/test.yml)
@@ -413,6 +413,33 @@ Once started, collaborate naturally. Claude will detect when to delegate tasks.
 
 ---
 
+## 🧩 Skills
+
+### /all-plan - Collaborative Multi-AI Design
+
+**Usage:** `/all-plan <requirement>`
+
+A 5-phase collaborative planning skill that leverages all mounted CLIs (Claude, Codex, Gemini, OpenCode) for comprehensive solution design.
+
+**How It Works:**
+1. **Requirement Refinement** - Socratic questioning to uncover hidden needs
+2. **Parallel Independent Design** - Each AI designs independently (no groupthink)
+3. **Comparative Analysis** - Merge insights, detect anti-patterns
+4. **Iterative Refinement** - Cross-AI review and critique
+5. **Final Output** - Actionable implementation plan
+
+**Key Features:**
+- **Socratic Ladder**: 7 structured questions for deep requirement mining
+- **Superpowers Lenses**: Systematic alternative exploration (10x scale, remove dependency, invert flow)
+- **Anti-pattern Detection**: Proactive risk identification across all designs
+
+**When to Use:**
+- Complex features requiring diverse perspectives
+- Architectural decisions with multiple valid approaches
+- High-stakes implementations needing thorough validation
+
+---
+
 ## 🖥️ Editor Integration: Neovim + Multi-AI Review
 
 <img src="assets/nvim.png" alt="Neovim integration with multi-AI code review" width="900">
@@ -459,6 +486,13 @@ ccb reinstall
 
 <details>
 <summary><b>Version History</b></summary>
+
+### v5.0.1
+- **Skills**: New `/all-plan` with Superpowers brainstorming + availability gating; Codex `lping/lpend` added; `gask` keeps brief summaries with `CCB_DONE`.
+- **CCA Status Bar**: CCA label now reads role name from `.autoflow/roles.json` (supports `_meta.name`) and caches per path.
+- **Installer**: Copy skill subdirectories (e.g., `references/`) for Claude/Codex installs.
+- **CLI**: Added `ccb uninstall` / `ccb reinstall` with Claude config cleanup.
+- **Routing**: Tighter project/session resolution (prefer `.ccb_config` anchor; avoid cross-project Claude session mismatches).
 
 ### v5.0.0
 - **Claude Independence**: No need to start Claude first; Codex (or any agent) can be the primary CLI

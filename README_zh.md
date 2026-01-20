@@ -1,6 +1,6 @@
 <div align="center">
 
-# Claude Code Bridge (ccb) v5.0.0
+# Claude Code Bridge (ccb) v5.0.1
 
 **基于终端分屏的全新多模型交互协作工具**
 **Claude & Codex & Gemini &opencode**
@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/模型皆可控-CF1322?style=for-the-badge" alt="模型皆可控">
 </p>
 
-[![Version](https://img.shields.io/badge/version-5.0.0-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-5.0.1-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 [English](README.md) | **中文**
@@ -481,6 +481,13 @@ ccb reinstall
 
 <details>
 <summary><b>更新历史</b></summary>
+
+### v5.0.1
+- **技能更新**：新增 `/all-plan`（Superpowers 头脑风暴 + 可用性分发）；Codex 侧新增 `lping/lpend`；`gask` 在 `CCB_DONE` 场景保留简要执行摘要。
+- **CCA 状态栏**：从 `.autoflow/roles.json` 读取角色名（支持 `_meta.name`），并按路径缓存。
+- **安装器**：安装技能时复制子目录（如 `references/`）。
+- **CLI**：新增 `ccb uninstall` / `ccb reinstall`，并清理 Claude 配置。
+- **路由**：项目/会话解析更严格（优先 `.ccb_config`，避免跨项目 Claude 会话）。
 
 ### v5.0.0
 - **解除依赖**：无需先启动 Claude，Codex 也可以作为主 CLI
