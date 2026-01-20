@@ -31,19 +31,20 @@ def test_run_up_sorts_providers_in_tmux(monkeypatch, tmp_path: Path) -> None:
 
     called: list[str] = []
 
-    def _start_provider(p: str) -> bool:
+    def _start_provider(p: str, **_kwargs) -> str:
         called.append(p)
-        return True
+        return f"%{len(called)}"
 
     monkeypatch.setattr(launcher, "_start_provider", _start_provider)
     monkeypatch.setattr(launcher, "_warmup_provider", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(launcher, "_maybe_start_caskd", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(launcher, "_start_claude", lambda: 0)
+    monkeypatch.setattr(launcher, "_start_provider_in_current_pane", lambda *_args, **_kwargs: 0)
     monkeypatch.setattr(launcher, "cleanup", lambda: None)
 
     rc = launcher.run_up()
     assert rc == 0
-    assert called == ["codex", "gemini", "opencode"]
+    assert called == ["gemini", "opencode"]
 
 
 def test_start_codex_tmux_writes_bridge_pid(monkeypatch, tmp_path: Path) -> None:
@@ -110,7 +111,8 @@ def test_start_codex_tmux_writes_bridge_pid(monkeypatch, tmp_path: Path) -> None
     launcher = ccb.AILauncher(providers=["codex"])
     launcher.terminal_type = "tmux"
 
-    assert launcher._start_codex_tmux() is True
+    pane_id = launcher._start_codex_tmux()
+    assert pane_id is not None
 
     runtime = Path(launcher.runtime_dir) / "codex"
     assert (runtime / "bridge.pid").exists()
