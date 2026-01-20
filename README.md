@@ -7,10 +7,6 @@
 **Build a real AI expert team. Give Claude Code / Codex / Gemini / OpenCode partners that never forget.**
 
 <p>
-  <img src="https://img.shields.io/badge/交互皆可见-096DD9?style=for-the-badge" alt="交互皆可见">
-  <img src="https://img.shields.io/badge/模型皆可控-CF1322?style=for-the-badge" alt="模型皆可控">
-</p>
-<p>
   <img src="https://img.shields.io/badge/Every_Interaction_Visible-096DD9?style=for-the-badge" alt="Every Interaction Visible">
   <img src="https://img.shields.io/badge/Every_Model_Controllable-CF1322?style=for-the-badge" alt="Every Model Controllable">
 </p>
@@ -21,7 +17,11 @@
 [![CI](https://github.com/bfly123/claude_code_bridge/actions/workflows/test.yml/badge.svg)](https://github.com/bfly123/claude_code_bridge/actions/workflows/test.yml)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
-**English** | [中文](README_zh.md)
+**English** | [Chinese](README_zh.md)
+
+[GitHub README](https://github.com/bfly123/claude_code_bridge#readme)
+
+![Showcase](assets/show.png)
 
 <img src="assets/readme_previews/video2.gif" alt="Any-terminal collaboration demo" width="900">
 
@@ -41,6 +41,22 @@
 | **🧠 Persistent Context** | Each AI maintains its own memory. Close and resume anytime (`-r` flag). |
 | **📉 Token Savings** | Sends lightweight prompts instead of full file history. |
 | **🪟 Native Workflow** | Integrates directly into **WezTerm** (recommended) or tmux. No complex servers required. |
+
+---
+
+<h2 align="center">🚀 What's New in v5.0</h2>
+
+> **Total Freedom: Any AI as Your Primary Driver**
+
+v5.0 removes the dependency on Claude as the sole orchestrator. Now, **Codex** (or any other agent) can be your main driver, controlling Claude, OpenCode, and Gemini with equal power.
+
+- **Claude Independence**: No need to start Claude first; Codex can act as the primary CLI.
+- **Unified Control**: Single entry point controls Claude/OpenCode/Gemini.
+- **Simplified Launch**: Dropped `ccb up`; use `ccb ...` or the default `ccb.config`.
+- **Flexible Mounting**: More flexible pane mounting and session binding.
+- **Default Config**: Auto-create `ccb.config` when missing.
+- **Daemon Autostart**: `caskd`/`laskd` auto-start in WezTerm/tmux when needed.
+- **Session Robustness**: PID liveness checks prevent stale sessions.
 
 ---
 
@@ -207,6 +223,9 @@ ccb claude             # Start Claude only
 ccb codex gemini       # Start both
 ccb codex gemini opencode claude  # Start all four (spaces)
 ccb codex,gemini,opencode,claude  # Start all four (commas)
+ccb -r codex gemini     # Resume last session for Codex + Gemini
+ccb -a codex gemini opencode  # Auto-approval mode with multiple providers
+ccb -a -r codex gemini opencode claude  # Auto + resume for all providers
 
 tmux tip: CCB's tmux status/pane theming is enabled only while CCB is running.
 
@@ -363,7 +382,7 @@ Once started, collaborate naturally. Claude will detect when to delegate tasks.
 
 ### 🎴 Fun & Creative: AI Poker Night!
 
-> *"Let Claude, Codex and Gemini play Dou Di Zhu (斗地主)! You deal the cards, everyone plays open hand!"*
+> *"Let Claude, Codex and Gemini play Dou Di Zhu! You deal the cards, everyone plays open hand!"*
 >
 > 🃏 Claude (Landlord) vs 🎯 Codex + 💎 Gemini (Farmers)
 
@@ -435,9 +454,12 @@ Once started, collaborate naturally. Claude will detect when to delegate tasks.
 <summary><b>Version History</b></summary>
 
 ### v5.0.0
-- **Version Selection**: `ccb update` now supports version targeting (`ccb update 4`, `ccb update 4.1.2`)
-- **Version Rollback**: Downgrade to any previous release with `ccb update <version>`
-- **Independent CCA Updates**: `ccb update` no longer auto-updates CCA; use `ccb update cca` explicitly
+- **Claude Independence**: No need to start Claude first; Codex (or any agent) can be the primary CLI
+- **Unified Control**: Single entry point controls Claude/OpenCode/Gemini equally
+- **Simplified Launch**: Removed `ccb up`; default `ccb.config` is auto-created when missing
+- **Flexible Mounting**: More flexible pane mounting and session binding
+- **Daemon Autostart**: `caskd`/`laskd` auto-start in WezTerm/tmux when needed
+- **Session Robustness**: PID liveness checks prevent stale sessions
 
 ### v4.1.3
 - **Codex Config**: Automatically migrate deprecated `sandbox_mode = "full-auto"` to `"danger-full-access"` to fix Codex startup
@@ -455,7 +477,7 @@ Once started, collaborate naturally. Claude will detect when to delegate tasks.
 - **Install**: Force update skills to ensure latest versions are applied
 
 ### v4.1.0
-- **Async Guardrail**: `cask/gask/oask` print a post-submit guardrail reminder for Claude
+- **Async Guardrail**: `cask/gask/oask` prints a post-submit guardrail reminder for Claude
 - **Sync Mode**: add `--sync` to suppress guardrail prompts for Codex callers
 - **Codex Skills**: update `oask/gask` skills to wait silently with `--sync`
 

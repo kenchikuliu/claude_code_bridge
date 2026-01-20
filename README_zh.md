@@ -16,8 +16,9 @@
 
 [English](README.md) | **中文**
 
+[GitHub README](https://github.com/bfly123/claude_code_bridge/blob/main/README_zh.md)
 
-/home/bfly/yunwei/claude_codex/assets/show.png
+![Showcase](assets/show.png)
 
 <img src="assets/readme_previews/video2.gif" alt="任意终端窗口协作演示" width="900">
 
@@ -43,6 +44,22 @@
 ---
 
 有人问我，和其他工作流软件的区别是什么，我用一句话回答：该项目只是不满api调用的agent交互方式而打造的**可见可控的多模型通讯方案**，该项目并不是工作流项目，但是基于它可以更容易发展出你所理想的工作流。
+
+<h2 align="center">🚀 v5.0 新版本特性</h2>
+
+> **彻底解放：任何 AI 都可作为主控**
+
+v5.0 不再依赖 Claude 先启动，Codex（或任意 AI）都能作为主 CLI，统一控制 Claude/OpenCode/Gemini。
+
+- **解除依赖**：无需先启动 Claude，Codex 可成为主控入口
+- **统一控制**：单一入口控制 CC/OC/GE
+- **启动更简单**：去掉 `ccb up`，直接 `ccb ...` 或使用默认 `ccb.config`
+- **挂载更自由**：更灵活的 pane 挂载与会话绑定
+- **默认配置**：缺失时自动创建默认 `ccb.config`
+- **守护进程自启**：`caskd`/`laskd` 在 WezTerm/tmux 按需启动
+- **会话更稳**：PID 存活校验避免旧会话干扰
+
+---
 
 <h2 align="center">🚀 v4.0 新版本特性</h2>
 
@@ -196,6 +213,9 @@ ccb claude             # 仅启动 Claude
 ccb codex gemini       # 同时启动两个
 ccb codex gemini opencode claude  # 同时启动四个（空格分隔）
 ccb codex,gemini,opencode,claude  # 同时启动四个（逗号分隔）
+ccb -r codex gemini     # 恢复 Codex + Gemini 上次会话
+ccb -a codex gemini opencode  # 自动权限模式，启动多个
+ccb -a -r codex gemini opencode claude  # 自动 + 恢复（四个全开）
 
 tmux 提示：CCB 的 tmux 状态栏/窗格标题主题只会在 CCB 运行期间启用。
 
@@ -456,9 +476,12 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile
 <summary><b>更新历史</b></summary>
 
 ### v5.0.0
-- **版本选择**: `ccb update` 支持指定版本更新 (`ccb update 4`, `ccb update 4.1.2`)
-- **版本回退**: 支持回退到任意历史版本 `ccb update <version>`
-- **CCA 独立更新**: `ccb update` 不再自动更新 CCA；需使用 `ccb update cca` 单独更新
+- **解除依赖**：无需先启动 Claude，Codex 也可以作为主 CLI
+- **统一控制**：单一入口控制 Claude/OpenCode/Gemini
+- **启动简化**：移除 `ccb up`，默认 `ccb.config` 自动生成
+- **挂载更自由**：更灵活的 pane 挂载与会话绑定
+- **守护进程自启**：`caskd`/`laskd` 在 WezTerm/tmux 按需启动
+- **会话更稳**：PID 存活校验避免旧会话干扰
 
 ### v4.1.3
 - **Codex 配置修复**: 自动迁移过期的 `sandbox_mode = "full-auto"` 为 `"danger-full-access"`，修复 Codex 无法启动的问题
