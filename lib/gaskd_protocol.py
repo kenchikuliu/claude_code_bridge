@@ -20,7 +20,7 @@ def wrap_gemini_prompt(message: str, req_id: str) -> str:
         f"{REQ_ID_PREFIX} {req_id}\n\n"
         f"{message}\n\n"
         "IMPORTANT:\n"
-        "- 必须回复执行情况总结, 不要沉默执行.\n"
+        "- Reply with an execution summary, in English. Do not stay silent.\n"
         "- End your reply with this exact final line (verbatim, on its own line):\n"
         f"{DONE_PREFIX} {req_id}\n"
     )
