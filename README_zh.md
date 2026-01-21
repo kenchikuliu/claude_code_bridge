@@ -3,7 +3,7 @@
 # Claude Code Bridge (ccb) v5.0.4
 
 **基于终端分屏的全新多模型交互协作工具**
-**Claude & Codex & Gemini &opencode**
+**Claude & Codex & Gemini & OpenCode & Droid**
 **超低token时时通讯，发挥cli全部功能**
 
 <p>
@@ -487,6 +487,26 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile
 | `gpend [N]` | 调取当前 Gemini 会话的对话记录 |
 | `gping` | 测试 Gemini 连通性 |
 
+### OpenCode 命令
+
+| 命令 | 说明 |
+| :--- | :--- |
+| `/oask <消息>` | 后台模式：提交任务给 OpenCode |
+| `opend [N]` | 调取当前 OpenCode 会话的对话记录 |
+| `oping` | 测试 OpenCode 连通性 |
+
+### Droid 指令
+
+| 指令 | 说明 |
+| :--- | :--- |
+| `/dask <msg>` | 后台模式：向 Droid 提交任务 |
+| `dpend [N]` | 获取 Droid 对话历史 |
+| `dping` | 测试 Droid 连接状态 |
+
+**🚀 调度能力：** Droid 现在可以像 Codex/Claude 一样调度其他 AI（Codex/Gemini/OpenCode/Claude）。
+运行 `ccb droid setup-delegation` 即可将必要的技能和工具安装到 Droid 中。
+配置完成后，Droid 即可使用 CCB 的调度工具（如 `cask/gask/lask/oask` 或 `ccb_ask_*`）在后台委派任务。
+
 ---
 
 ## 🖥️ 编辑器集成：Neovim + 多模型代码审查
@@ -518,6 +538,9 @@ ccb reinstall
 
 <details>
 <summary><b>更新历史</b></summary>
+
+### v5.0.5
+- **Droid**：新增调度工具（`ccb_ask_*` 与 `cask/gask/lask/oask`），并提供 `ccb droid setup-delegation` 安装命令
 
 ### v5.0.4
 - **OpenCode**：修复 `-r` 恢复在多项目切换后失效的问题

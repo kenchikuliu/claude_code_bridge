@@ -104,6 +104,10 @@ SCRIPTS_TO_LINK=(
   bin/laskd
   bin/lpend
   bin/lping
+  bin/dask
+  bin/daskd
+  bin/dpend
+  bin/dping
   ccb
 )
 
@@ -114,6 +118,8 @@ CLAUDE_MARKDOWN=(
   gping.md
   opend.md
   oping.md
+  dpend.md
+  dping.md
 )
 
 LEGACY_SCRIPTS=(
@@ -138,6 +144,8 @@ Optional environment variables:
   CODEX_INSTALL_PREFIX     Install directory (default: ~/.local/share/codex-dual)
   CODEX_BIN_DIR            Executable directory (default: ~/.local/bin)
   CODEX_CLAUDE_COMMAND_DIR Custom Claude commands directory (default: auto-detect)
+  CCB_DROID_AUTOINSTALL    Auto-register Droid MCP tools if droid exists (default: 1)
+  CCB_DROID_AUTOINSTALL_FORCE Re-register Droid MCP tools (default: 0)
 USAGE
 }
 
@@ -680,6 +688,34 @@ install_codex_skills() {
   echo "Updated Codex skills directory: $skills_dst"
 }
 
+install_droid_delegation() {
+  if [[ "${CCB_DROID_AUTOINSTALL:-1}" == "0" ]]; then
+    return
+  fi
+  if ! command -v droid >/dev/null 2>&1; then
+    return
+  fi
+  local py
+  py="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
+  if [[ -z "$py" ]]; then
+    echo "WARN: python required for Droid MCP setup; skipping"
+    return
+  fi
+  local server="$INSTALL_PREFIX/mcp/ccb-delegation/server.py"
+  if [[ ! -f "$server" ]]; then
+    echo "WARN: Droid MCP server not found at $server; skipping"
+    return
+  fi
+  if [[ "${CCB_DROID_AUTOINSTALL_FORCE:-0}" == "1" ]]; then
+    droid mcp remove ccb-delegation >/dev/null 2>&1 || true
+  fi
+  if droid mcp add ccb-delegation --type stdio "$py" "$server" >/dev/null 2>&1; then
+    echo "OK: Droid MCP delegation registered"
+  else
+    echo "WARN: Failed to register Droid MCP delegation (already registered or droid config unavailable)"
+  fi
+}
+
 CCB_START_MARKER="<!-- CCB_CONFIG_START -->"
 CCB_END_MARKER="<!-- CCB_CONFIG_END -->"
 LEGACY_RULE_MARKER="## Codex 协作规则"
@@ -1150,6 +1186,7 @@ install_all() {
   install_claude_commands
   install_claude_skills
   install_codex_skills
+  install_droid_delegation
   install_claude_md_config
   install_settings_permissions
   install_tmux_config

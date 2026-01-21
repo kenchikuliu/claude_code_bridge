@@ -3,7 +3,7 @@
 # Claude Code Bridge (ccb) v5.0.4
 
 **New Multi-Model Collaboration Tool via Split-Pane Terminal**
-**Claude & Codex & Gemini & OpenCode**
+**Claude & Codex & Gemini & OpenCode & Droid**
 **Ultra-low token real-time communication, unleashing full CLI power**
 
 <p>
@@ -446,6 +446,26 @@ Once started, collaborate naturally. Claude will detect when to delegate tasks.
 | `gpend [N]` | Fetch Gemini conversation history |
 | `gping` | Test Gemini connectivity |
 
+### OpenCode Commands
+
+| Command | Description |
+| :--- | :--- |
+| `/oask <msg>` | Background mode: Submit task to OpenCode |
+| `opend [N]` | Fetch OpenCode conversation history |
+| `oping` | Test OpenCode connectivity |
+
+### Droid Commands
+
+| Command | Description |
+| :--- | :--- |
+| `/dask <msg>` | Background mode: Submit task to Droid |
+| `dpend [N]` | Fetch Droid conversation history |
+| `dping` | Test Droid connectivity |
+
+**🚀 Delegation Power:** Droid can now orchestrate other AIs (Codex, Gemini, OpenCode, Claude).
+Run `ccb droid setup-delegation` to install the necessary skills and tools into Droid.
+Once setup, Droid can use CCB delegation tools (e.g. `cask/gask/lask/oask` or `ccb_ask_*`) to delegate tasks in the background.
+
 ---
 
 ## 🧩 Skills
@@ -532,6 +552,9 @@ ccb reinstall
 
 <details>
 <summary><b>Version History</b></summary>
+
+### v5.0.5
+- **Droid**: Add delegation tools (`ccb_ask_*` and `cask/gask/lask/oask`) plus `ccb droid setup-delegation` for MCP install
 
 ### v5.0.4
 - **OpenCode**: 修复 `-r` 恢复在多项目切换后失效的问题

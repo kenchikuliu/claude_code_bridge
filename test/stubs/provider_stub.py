@@ -198,13 +198,63 @@ def _handle_opencode(req_id: str, delay_s: float, state: dict) -> None:
     _write_opencode_storage(root, project_id, session_id, reply, state["msg_index"])
 
 
+def _droid_sessions_root() -> Path:
+    root = (os.environ.get("DROID_SESSIONS_ROOT") or os.environ.get("FACTORY_SESSIONS_ROOT") or "").strip()
+    if root:
+        return Path(root).expanduser()
+    return (Path.home() / ".factory" / "sessions").expanduser()
+
+
+def _droid_slug(path: Path) -> str:
+    return re.sub(r"[^A-Za-z0-9]", "-", str(path))
+
+
+def _droid_session_path() -> Path:
+    explicit = (os.environ.get("DROID_SESSION_PATH") or "").strip()
+    if explicit:
+        return Path(explicit).expanduser()
+    root = _droid_sessions_root()
+    slug = _droid_slug(Path.cwd())
+    sid = (os.environ.get("DROID_SESSION_ID") or "").strip() or f"stub-{uuid.uuid4().hex}"
+    return root / slug / f"{sid}.jsonl"
+
+
+def _ensure_droid_session_start(path: Path, session_id: str, cwd: str) -> None:
+    try:
+        if path.exists() and path.stat().st_size > 0:
+            return
+    except OSError:
+        return
+    entry = {"type": "session_start", "id": session_id, "cwd": cwd}
+    _append_jsonl(path, entry)
+
+
+def _handle_droid(req_id: str, prompt: str, delay_s: float, session_path: Path, session_id: str) -> None:
+    _ensure_droid_session_start(session_path, session_id, os.getcwd())
+    user_entry = {
+        "type": "message",
+        "id": f"msg-{uuid.uuid4().hex}",
+        "message": {"role": "user", "content": [{"type": "text", "text": prompt}]},
+    }
+    _append_jsonl(session_path, user_entry)
+    if delay_s:
+        time.sleep(delay_s)
+    reply = f"stub reply for {req_id}\nCCB_DONE: {req_id}"
+    assistant_entry = {
+        "type": "message",
+        "id": f"msg-{uuid.uuid4().hex}",
+        "message": {"role": "assistant", "content": [{"type": "text", "text": reply}]},
+    }
+    _append_jsonl(session_path, assistant_entry)
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--provider", default="")
     args, _unknown = parser.parse_known_args(argv[1:])
 
     provider = (args.provider or Path(argv[0]).name).strip().lower()
-    if provider not in ("codex", "gemini", "claude", "opencode"):
+    if provider not in ("codex", "gemini", "claude", "opencode", "droid"):
         print(f"[stub] unknown provider: {provider}", file=sys.stderr)
         return 2
 
@@ -216,6 +266,8 @@ def main(argv: list[str]) -> int:
     gemini_session_path = None
     claude_session_path = None
     opencode_state: dict | None = None
+    droid_session_path: Path | None = None
+    droid_session_id = ""
 
     if provider == "gemini":
         gemini_session_path = _gemini_session_path()
@@ -235,6 +287,10 @@ def main(argv: list[str]) -> int:
             "session_id": session_id,
             "msg_index": 0,
         }
+    elif provider == "droid":
+        droid_session_path = _droid_session_path()
+        droid_session_id = (os.environ.get("DROID_SESSION_ID") or "").strip() or f"stub-{uuid.uuid4().hex}"
+        _ensure_droid_session_start(droid_session_path, droid_session_id, os.getcwd())
 
     def _handle_request(req_id: str, prompt: str) -> None:
         if provider == "codex":
@@ -256,6 +312,10 @@ def main(argv: list[str]) -> int:
         if provider == "opencode":
             assert opencode_state is not None
             _handle_opencode(req_id, delay_s, opencode_state)
+            return
+        if provider == "droid":
+            assert droid_session_path is not None
+            _handle_droid(req_id, prompt, delay_s, droid_session_path, droid_session_id)
             return
 
     def _signal_handler(_signum, _frame):

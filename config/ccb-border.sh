@@ -40,6 +40,12 @@ case "$key" in
     OpenCode)
         set_border "fg=#9ece6a,bold" # Green
         ;;
+    Droid)
+        set_border "fg=#e0af68,bold" # Yellow
+        ;;
+    Cmd)
+        set_border "fg=#7dcfff,bold" # Teal
+        ;;
     *)
         case "$title" in
             CCB-Codex*)
@@ -53,6 +59,12 @@ case "$key" in
                 ;;
             CCB-OpenCode*)
                 set_border "fg=#9ece6a,bold"
+                ;;
+            CCB-Droid*)
+                set_border "fg=#e0af68,bold"
+                ;;
+            CCB-Cmd*)
+                set_border "fg=#7dcfff,bold"
                 ;;
             *)
                 set_border "fg=#7aa2f7,bold" # Blue (default)

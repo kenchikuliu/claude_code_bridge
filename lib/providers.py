@@ -65,6 +65,16 @@ LASKD_SPEC = ProviderDaemonSpec(
 )
 
 
+DASKD_SPEC = ProviderDaemonSpec(
+    daemon_key="daskd",
+    protocol_prefix="dask",
+    state_file_name="daskd.json",
+    log_file_name="daskd.log",
+    idle_timeout_env="CCB_DASKD_IDLE_TIMEOUT_S",
+    lock_name="daskd",
+)
+
+
 CASK_CLIENT_SPEC = ProviderClientSpec(
     protocol_prefix="cask",
     enabled_env="CCB_CASKD",
@@ -110,4 +120,16 @@ LASK_CLIENT_SPEC = ProviderClientSpec(
     session_filename=".claude-session",
     daemon_bin_name="laskd",
     daemon_module="laskd_daemon",
+)
+
+
+DASK_CLIENT_SPEC = ProviderClientSpec(
+    protocol_prefix="dask",
+    enabled_env="CCB_DASKD",
+    autostart_env_primary="CCB_DASKD_AUTOSTART",
+    autostart_env_legacy="CCB_AUTO_DASKD",
+    state_file_env="CCB_DASKD_STATE_FILE",
+    session_filename=".droid-session",
+    daemon_bin_name="daskd",
+    daemon_module="daskd_daemon",
 )

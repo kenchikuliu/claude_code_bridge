@@ -51,6 +51,7 @@ check_session() {
         codex)   session_file="$PWD/.ccb_config/.codex-session" ;;
         gemini)  session_file="$PWD/.ccb_config/.gemini-session" ;;
         opencode) session_file="$PWD/.ccb_config/.opencode-session" ;;
+        droid)   session_file="$PWD/.ccb_config/.droid-session" ;;
     esac
 
     # Backwards compatibility: older versions stored session files in project root.
@@ -97,7 +98,7 @@ try:
 except Exception:
     data = {}
 providers = {
-    "claude","codex","opencode","gemini","oc","cc","ge",
+    "claude","codex","opencode","gemini","droid","oc","cc","ge","dr",
 }
 DESCRIPTIVE_KEYS = (
     "plan","scheme","role","role_type","roleType","roleset",
@@ -168,7 +169,7 @@ PY
                     local t
                     for t in $tokens; do
                         case "$t" in
-                            claude|codex|opencode|gemini|oc|cc|ge) ;;
+                            claude|codex|opencode|gemini|droid|oc|cc|ge|dr) ;;
                             *) providerish=0; break ;;
                         esac
                     done
@@ -253,8 +254,9 @@ main() {
             local codex_s=$(format_ai_status "cask" "X" "$C_GREEN")
             local gemini_s=$(format_ai_status "gask" "G" "$C_BLUE")
             local opencode_s=$(format_ai_status "oask" "O" "$C_PURPLE")
+            local droid_s=$(format_ai_status "dask" "D" "$C_YELLOW")
 
-            out=" ${claude_s}${codex_s}${gemini_s}${opencode_s} "
+            out=" ${claude_s}${codex_s}${gemini_s}${opencode_s}${droid_s} "
             ;;
 
         daemons)
@@ -269,6 +271,9 @@ main() {
             fi
             if [[ $(check_daemon "oask") == "on" ]]; then
                 output+="${C_PURPLE}O${C_RESET}"
+            fi
+            if [[ $(check_daemon "dask") == "on" ]]; then
+                output+="${C_YELLOW}D${C_RESET}"
             fi
 
             if [[ -n "$output" ]]; then
@@ -296,6 +301,11 @@ main() {
                 icons+="${C_PURPLE}●${C_RESET}"
             else
                 icons+="${C_DIM}○${C_RESET}"
+            fi
+            if [[ $(check_daemon "dask") == "on" ]]; then
+                icons+=" ${C_YELLOW}●${C_RESET}"
+            else
+                icons+=" ${C_DIM}○${C_RESET}"
             fi
 
             out="${output}${icons}"
@@ -329,18 +339,32 @@ main() {
                 output+="${C_DIM}○${C_RESET}"
             fi
 
+            # D - Droid (dask daemon)
+            if [[ $(check_daemon "dask") == "on" ]]; then
+                output+=" ${C_YELLOW}●${C_RESET}"
+            else
+                output+=" ${C_DIM}○${C_RESET}"
+            fi
+
             out="${output}"
             ;;
 
         pane)
             # Show pane-specific info (for status-left)
             local pane_title="${TMUX_PANE_TITLE:-}"
-            if [[ "$pane_title" == CCB-* ]]; then
+            local pane_title_lc
+            pane_title_lc="$(printf '%s' "$pane_title" | tr '[:upper:]' '[:lower:]')"
+            if [[ "$pane_title_lc" == ccb-* ]]; then
                 local ai_name="${pane_title#CCB-}"
-                case "$ai_name" in
+                ai_name="${ai_name#ccb-}"
+                local ai_key
+                ai_key="$(printf '%s' "$ai_name" | tr '[:upper:]' '[:lower:]')"
+                case "$ai_key" in
                     claude|codex) echo "${C_ORANGE}[$ai_name]${C_RESET}" ;;
                     gemini)       echo "${C_BLUE}[$ai_name]${C_RESET}" ;;
                     opencode)     echo "${C_PURPLE}[$ai_name]${C_RESET}" ;;
+                    droid)        echo "${C_YELLOW}[$ai_name]${C_RESET}" ;;
+                    cmd)          echo "${C_TEAL}[$ai_name]${C_RESET}" ;;
                     *)            echo "[$ai_name]" ;;
                 esac
             fi

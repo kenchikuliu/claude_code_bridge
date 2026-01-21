@@ -206,7 +206,7 @@ function Install-Native {
     New-Item -ItemType Directory -Path $binDir -Force | Out-Null
   }
 
-  $items = @("ccb", "lib", "bin", "commands")
+  $items = @("ccb", "lib", "bin", "commands", "mcp", "droid_skills")
   foreach ($item in $items) {
     $src = Join-Path $repoRoot $item
     $dst = Join-Path $InstallPrefix $item
@@ -235,7 +235,8 @@ function Install-Native {
     "cask", "caskd", "cping", "cpend",
     "gask", "gaskd", "gping", "gpend",
     "oask", "oaskd", "oping", "opend",
-    "lask", "laskd", "lping", "lpend"
+    "lask", "laskd", "lping", "lpend",
+    "dask", "daskd", "dping", "dpend"
   )
 
   # In MSYS/Git-Bash, invoking the script file directly will honor the shebang.
@@ -327,6 +328,7 @@ function Install-Native {
   }
   Install-CodexSkills
   Install-ClaudeConfig
+  Install-DroidDelegation -PythonCmd $pythonCmd -InstallPrefix $InstallPrefix
 
   try {
     Set-WezTermDefaultShellToPowerShell
@@ -391,6 +393,35 @@ function Install-CodexSkills {
     Write-Host "  Updated Codex skill: $skillName"
   }
   Write-Host "Updated Codex skills directory: $skillsDst"
+}
+
+function Install-DroidDelegation {
+  param(
+    [string]$PythonCmd,
+    [string]$InstallPrefix
+  )
+
+  if ($env:CCB_DROID_AUTOINSTALL -eq "0") {
+    return
+  }
+  $droidCmd = Get-Command droid -ErrorAction SilentlyContinue
+  if (-not $droidCmd) {
+    return
+  }
+  $serverPath = Join-Path $InstallPrefix "mcp\\ccb-delegation\\server.py"
+  if (-not (Test-Path $serverPath)) {
+    Write-Host "WARN: Droid MCP server not found at $serverPath; skipping"
+    return
+  }
+  if ($env:CCB_DROID_AUTOINSTALL_FORCE -eq "1") {
+    try { & $droidCmd.Source "mcp" "remove" "ccb-delegation" | Out-Null } catch {}
+  }
+  try {
+    & $droidCmd.Source "mcp" "add" "ccb-delegation" "--type" "stdio" $PythonCmd $serverPath | Out-Null
+    Write-Host "OK: Droid MCP delegation registered"
+  } catch {
+    Write-Warning "Droid MCP delegation setup failed: $_"
+  }
 }
 
 function Install-ClaudeConfig {

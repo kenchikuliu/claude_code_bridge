@@ -25,10 +25,11 @@ CODEX_ROOT="${ARTIFACT_ROOT}/codex_sessions"
 GEMINI_ROOT="${ARTIFACT_ROOT}/gemini_tmp"
 CLAUDE_ROOT="${ARTIFACT_ROOT}/claude_projects"
 OPENCODE_ROOT="${ARTIFACT_ROOT}/opencode_storage"
+DROID_ROOT="${ARTIFACT_ROOT}/droid_sessions"
 RUNTIME_ROOT="${ARTIFACT_ROOT}/runtime"
 RUN_DIR_BASE="${ARTIFACT_ROOT}/run"
 
-mkdir -p "${STUB_BIN}" "${CODEX_ROOT}" "${GEMINI_ROOT}" "${CLAUDE_ROOT}" "${OPENCODE_ROOT}" "${RUNTIME_ROOT}" "${RUN_DIR_BASE}" "${TEST_DIR1}" "${TEST_DIR2}"
+mkdir -p "${STUB_BIN}" "${CODEX_ROOT}" "${GEMINI_ROOT}" "${CLAUDE_ROOT}" "${OPENCODE_ROOT}" "${DROID_ROOT}" "${RUNTIME_ROOT}" "${RUN_DIR_BASE}" "${TEST_DIR1}" "${TEST_DIR2}"
 
 cat >"${STUB_BIN}/codex" <<EOF
 #!/usr/bin/env bash
@@ -46,12 +47,17 @@ cat >"${STUB_BIN}/opencode" <<EOF
 #!/usr/bin/env bash
 exec "${PYTHON}" "${STUB_PROVIDER}" --provider opencode "\$@"
 EOF
-chmod +x "${STUB_BIN}/codex" "${STUB_BIN}/gemini" "${STUB_BIN}/claude" "${STUB_BIN}/opencode"
+cat >"${STUB_BIN}/droid" <<EOF
+#!/usr/bin/env bash
+exec "${PYTHON}" "${STUB_PROVIDER}" --provider droid "\$@"
+EOF
+chmod +x "${STUB_BIN}/codex" "${STUB_BIN}/gemini" "${STUB_BIN}/claude" "${STUB_BIN}/opencode" "${STUB_BIN}/droid"
 
 export PATH="${STUB_BIN}:${PATH}"
 export GEMINI_ROOT
 export CLAUDE_PROJECTS_ROOT="${CLAUDE_ROOT}"
 export OPENCODE_STORAGE_ROOT="${OPENCODE_ROOT}"
+export DROID_SESSIONS_ROOT="${DROID_ROOT}"
 export CODEX_SESSION_ROOT="${CODEX_ROOT}"
 export CCB_GASKD=1
 export CCB_GASKD_AUTOSTART=1
@@ -61,11 +67,14 @@ export CCB_OASKD=1
 export CCB_OASKD_AUTOSTART=1
 export CCB_CASKD=1
 export CCB_CASKD_AUTOSTART=1
+export CCB_DASKD=1
+export CCB_DASKD_AUTOSTART=1
 export CCB_SYNC_TIMEOUT=20
 export CCB_SESSION_FILE=
 unset CODEX_SESSION_ID CODEX_RUNTIME_DIR CODEX_INPUT_FIFO CODEX_OUTPUT_FIFO CODEX_TMUX_SESSION CODEX_WEZTERM_PANE
 unset GEMINI_SESSION_ID GEMINI_RUNTIME_DIR GEMINI_TMUX_SESSION GEMINI_WEZTERM_PANE
 unset OPENCODE_SESSION_ID OPENCODE_RUNTIME_DIR OPENCODE_TMUX_SESSION OPENCODE_WEZTERM_PANE
+unset DROID_SESSION_ID DROID_RUNTIME_DIR DROID_TMUX_SESSION DROID_WEZTERM_PANE
 
 FAIL=0
 SESSIONS=()
@@ -147,6 +156,17 @@ PY
 }
 
 claude_key() {
+  "${PYTHON}" - "$1" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+work_dir = Path(sys.argv[1])
+print(re.sub(r"[^A-Za-z0-9]", "-", str(work_dir)))
+PY
+}
+
+droid_slug() {
   "${PYTHON}" - "$1" <<'PY'
 import re
 import sys
@@ -273,6 +293,35 @@ path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding=
 PY
 }
 
+write_droid_session() {
+  "${PYTHON}" - "$1" "$2" "$3" "$4" "$5" "$6" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+proj = Path(sys.argv[1])
+pane_id = sys.argv[2]
+runtime_dir = sys.argv[3]
+session_path = sys.argv[4]
+session_id = sys.argv[5]
+project_id = sys.argv[6]
+
+data = {
+    "session_id": session_id,
+    "terminal": "tmux",
+    "pane_id": pane_id,
+    "runtime_dir": runtime_dir,
+    "work_dir": str(proj),
+    "droid_session_path": session_path,
+    "droid_session_id": session_id,
+    "active": True,
+    "ccb_project_id": project_id,
+}
+path = proj / ".ccb_config" / ".droid-session"
+path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+PY
+}
+
 write_codex_session() {
   "${PYTHON}" - "$1" "$2" "$3" "$4" "$5" "$6" "$7" <<'PY'
 import json
@@ -316,6 +365,7 @@ cleanup() {
     CCB_RUN_DIR="${run_dir}" "${PYTHON}" "${ROOT}/bin/laskd" --shutdown >/dev/null 2>&1 || true
     CCB_RUN_DIR="${run_dir}" "${PYTHON}" "${ROOT}/bin/oaskd" --shutdown >/dev/null 2>&1 || true
     CCB_RUN_DIR="${run_dir}" "${PYTHON}" "${ROOT}/bin/caskd" --shutdown >/dev/null 2>&1 || true
+    CCB_RUN_DIR="${run_dir}" "${PYTHON}" "${ROOT}/bin/daskd" --shutdown >/dev/null 2>&1 || true
   done
 }
 trap cleanup EXIT
@@ -394,8 +444,17 @@ start_tmux_provider "stub-opencode-${RUN_ID}-mix" "${PROJ_MIX}" opencode OPENCOD
   OPENCODE_STORAGE_ROOT="${OPENCODE_ROOT}" OPENCODE_PROJECT_ID="${OPENCODE_PROJECT_MIX}" OPENCODE_SESSION_ID="${OPENCODE_SESSION_MIX}" OPENCODE_STUB_DELAY="0.25"
 write_opencode_session "${PROJ_MIX}" "${OPENCODE_PANE_MIX}" "${OPENCODE_RUNTIME_MIX}" "${PID_MIX}" "${OPENCODE_PROJECT_MIX}" "${OPENCODE_SESSION_MIX}"
 
+DROID_SLUG_MIX="$(droid_slug "${PROJ_MIX}")"
+DROID_SESSION_ID_MIX="session-${RUN_ID}-mix"
+DROID_SESSION_MIX="${DROID_ROOT}/${DROID_SLUG_MIX}/${DROID_SESSION_ID_MIX}.jsonl"
+DROID_RUNTIME_MIX="${RUNTIME_ROOT}/mix-droid"
+mkdir -p "${DROID_RUNTIME_MIX}" "$(dirname "${DROID_SESSION_MIX}")"
+start_tmux_provider "stub-droid-${RUN_ID}-mix" "${PROJ_MIX}" droid DROID_PANE_MIX \
+  DROID_SESSIONS_ROOT="${DROID_ROOT}" DROID_SESSION_ID="${DROID_SESSION_ID_MIX}" DROID_STUB_DELAY="0.25"
+write_droid_session "${PROJ_MIX}" "${DROID_PANE_MIX}" "${DROID_RUNTIME_MIX}" "${DROID_SESSION_MIX}" "${DROID_SESSION_ID_MIX}" "${PID_MIX}"
+
 log "Test: ping commands"
-for ping in gping lping oping cping; do
+for ping in gping lping oping cping dping; do
   if (cd "${PROJ_MIX}" && CCB_RUN_DIR="${RUN_DIR_MIX}" "${PYTHON}" "${ROOT}/bin/${ping}" >/tmp/ccb_${ping}_${RUN_ID}.out 2>/tmp/ccb_${ping}_${RUN_ID}.err); then
     ok "${ping}"
   else
@@ -425,6 +484,13 @@ else
   fail "oask reply"
 fi
 
+ASK_OUT="$(cd "${PROJ_MIX}" && CCB_RUN_DIR="${RUN_DIR_MIX}" "${PYTHON}" "${ROOT}/bin/dask" --sync "hi droid" 2>/tmp/ccb_dask_${RUN_ID}.err)" || fail "dask rc"
+if [ -n "${ASK_OUT}" ]; then
+  ok "dask reply"
+else
+  fail "dask reply"
+fi
+
 ASK_OUT="$(cd "${PROJ_MIX}" && CCB_RUN_DIR="${RUN_DIR_MIX}" "${PYTHON}" "${ROOT}/bin/cask" --sync "hi codex" 2>/tmp/ccb_cask_${RUN_ID}.err)" || fail "cask rc"
 if [ -n "${ASK_OUT}" ]; then
   ok "cask reply"
@@ -452,6 +518,13 @@ if echo "${PEND_OUT}" | grep -q "stub reply"; then
   ok "opend output"
 else
   fail "opend output"
+fi
+
+PEND_OUT="$(cd "${PROJ_MIX}" && CCB_RUN_DIR="${RUN_DIR_MIX}" "${PYTHON}" "${ROOT}/bin/dpend" 2>/tmp/ccb_dpend_${RUN_ID}.err)" || fail "dpend rc"
+if echo "${PEND_OUT}" | grep -q "stub reply"; then
+  ok "dpend output"
+else
+  fail "dpend output"
 fi
 
 PEND_OUT="$(cd "${PROJ_MIX}" && CCB_RUN_DIR="${RUN_DIR_MIX}" "${PYTHON}" "${ROOT}/bin/cpend" 2>/tmp/ccb_cpend_${RUN_ID}.err)" || fail "cpend rc"
