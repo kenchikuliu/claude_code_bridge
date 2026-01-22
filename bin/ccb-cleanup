@@ -1,0 +1,22 @@
+#!/bin/bash
+# CCB Zombie Sessions Cleaner
+
+echo "🔍 检查僵尸 tmux sessions..."
+ZOMBIE_COUNT=$(tmux list-sessions 2>/dev/null | grep -E "codex-|gemini-" | wc -l)
+
+if [ "$ZOMBIE_COUNT" -eq 0 ]; then
+    echo "✅ 没有僵尸 sessions"
+    exit 0
+fi
+
+echo "⚠️  发现 $ZOMBIE_COUNT 个僵尸 sessions"
+tmux list-sessions 2>/dev/null | grep -E "codex-|gemini-" | head -10
+
+read -p "是否清理这些 sessions? (y/N) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    tmux list-sessions 2>/dev/null | grep -E "codex-|gemini-" | cut -d: -f1 | xargs -I {} tmux kill-session -t {}
+    echo "✅ 已清理完成"
+else
+    echo "❌ 已取消"
+fi

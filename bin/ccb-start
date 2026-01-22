@@ -1,0 +1,104 @@
+#!/bin/bash
+# CCB 智能启动脚本 - 只清理真正的僵尸 sessions
+
+# 颜色定义
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}🧹 检查僵尸 sessions...${NC}"
+
+# 1. 智能清理：只清理主进程已死的僵尸 sessions
+ZOMBIE_SESSIONS=()
+for session in $(tmux list-sessions 2>/dev/null | grep -E "codex-|gemini-" | cut -d: -f1); do
+    # 从 session 名称提取 PID（格式：codex-<pid>-<random> 或 gemini-<pid>-<random>）
+    PID=$(echo "$session" | cut -d- -f2)
+    
+    # 检查这个 PID 是否还存在
+    if ! ps -p "$PID" > /dev/null 2>&1; then
+        ZOMBIE_SESSIONS+=("$session")
+    fi
+done
+
+if [ ${#ZOMBIE_SESSIONS[@]} -gt 0 ]; then
+    echo -e "${YELLOW}⚠️  发现 ${#ZOMBIE_SESSIONS[@]} 个真正的僵尸 sessions（主进程已死）${NC}"
+    for session in "${ZOMBIE_SESSIONS[@]}"; do
+        echo "    - $session"
+        tmux kill-session -t "$session" 2>/dev/null
+    done
+    echo -e "${GREEN}✅ 已清理僵尸 sessions${NC}"
+else
+    echo -e "${GREEN}✅ 没有僵尸 sessions${NC}"
+fi
+
+# 2. 使用当前目录
+CURRENT_DIR=$(pwd)
+echo -e "${GREEN}📂 当前目录: $CURRENT_DIR${NC}"
+
+# 检查这个目录是否已经有 CCB 在运行
+PROJECT_HASH=$(echo -n "$CURRENT_DIR" | md5sum | cut -d' ' -f1 | head -c 16)
+LOCK_FILE="$HOME/.cache/ccb/projects/$PROJECT_HASH/lock"
+
+if [ -f "$LOCK_FILE" ]; then
+    LOCK_PID=$(cat "$LOCK_FILE" 2>/dev/null)
+    if ps -p "$LOCK_PID" > /dev/null 2>&1; then
+        echo -e "${RED}❌ CCB 已经在运行 (PID: $LOCK_PID)${NC}"
+        echo -e "${YELLOW}💡 如果想连接到现有实例，请在对应的终端操作${NC}"
+        echo -e "${YELLOW}💡 如果想启动新实例，请先停止旧的或切换到不同目录${NC}"
+        exit 1
+    else
+        # 锁文件存在但进程已死，清理锁文件
+        echo -e "${YELLOW}⚠️  发现过期的锁文件，正在清理...${NC}"
+        rm -f "$LOCK_FILE"
+        echo -e "${GREEN}✅ 已清理过期锁文件${NC}"
+    fi
+fi
+
+# 3. 同步 tmux 全局环境变量（如果已在 tmux 中）
+if [ -n "$TMUX" ]; then
+    echo -e "${YELLOW}🔄 同步 tmux 环境变量...${NC}"
+    # 更新 tmux 全局环境
+    tmux set-environment -g ANTHROPIC_API_KEY "${ANTHROPIC_API_KEY:-}"
+    tmux set-environment -g ANTHROPIC_BASE_URL "${ANTHROPIC_BASE_URL:-}"
+    tmux set-environment -g HTTP_PROXY "${HTTP_PROXY:-}"
+    tmux set-environment -g HTTPS_PROXY "${HTTPS_PROXY:-}"
+    # 从 tmux 环境同步回当前 shell
+    eval $(tmux show-environment -s 2>/dev/null | grep -E "^(ANTHROPIC_|HTTP_PROXY|HTTPS_PROXY|ALL_PROXY)")
+fi
+
+# 4. 检查是否在 tmux 中
+if [ -z "$TMUX" ]; then
+    echo -e "${YELLOW}🪟 检测到不在 tmux 中，正在启动 tmux...${NC}"
+    echo
+    # 在新 tmux session 中启动 CCB（显式初始化 conda）
+    CONDA_BASE="$HOME/anaconda3"
+    if [ "$#" -gt 0 ]; then
+        exec tmux new-session "cd '$CURRENT_DIR' && source '$CONDA_BASE/etc/profile.d/conda.sh' && conda activate ccb && ccb -a $* ; exec bash"
+    else
+        exec tmux new-session "cd '$CURRENT_DIR' && source '$CONDA_BASE/etc/profile.d/conda.sh' && conda activate ccb && ccb -a codex gemini claude ; exec bash"
+    fi
+else
+    # 已经在 tmux 中，直接在当前窗口启动 CCB
+
+    # 检查 conda 环境
+    if [ -z "$CONDA_DEFAULT_ENV" ] || [ "$CONDA_DEFAULT_ENV" != "ccb" ]; then
+        echo -e "${YELLOW}🐍 激活 conda ccb 环境...${NC}"
+        source ~/anaconda3/etc/profile.d/conda.sh
+        conda activate ccb
+    fi
+
+    echo
+    echo -e "${GREEN}🚀 启动 CCB...${NC}"
+
+    # 如果传入了参数，使用参数，否则使用默认的 codex gemini claude
+    if [ "$#" -gt 0 ]; then
+        echo -e "${YELLOW}命令: ccb -a $@${NC}"
+        echo
+        ccb -a "$@"
+    else
+        echo -e "${YELLOW}命令: ccb -a codex gemini claude${NC}"
+        echo
+        ccb -a codex gemini claude
+    fi
+fi

@@ -674,3 +674,36 @@ ccb reinstall
 - Fix race condition in gask/cask: pre-check for existing messages before wait loop
 
 </details>
+
+---
+
+## 🧹 Session Management
+
+CCB v5.0+ includes smart session cleanup tools to prevent zombie sessions.
+
+### Quick Start with `ccb-start`
+
+**Recommended way to launch CCB** (automatically cleans zombies):
+```bash
+ccb-start              # Auto-cleanup + launch in current directory
+ccb-start codex gemini # Custom backends
+```
+
+### Manual Cleanup with `ccb-cleanup`
+
+Check and remove orphaned backend sessions:
+```bash
+ccb-cleanup            # Interactive cleanup
+```
+
+### Why Use These Tools?
+
+When CCB exits unexpectedly (crash, Ctrl+C), backend tmux sessions (`codex-*`, `gemini-*`) may remain as zombies. These tools:
+
+- **Smart Detection**: Only kills sessions whose parent process is dead
+- **Safe**: Never kills active CCB instances
+- **Per-Directory**: Multiple CCB instances in different directories work independently
+- **Env Sync**: Automatically syncs ANTHROPIC_API_KEY and proxy settings to tmux
+
+📖 **Full documentation**: [CLEANUP_GUIDE.md](CLEANUP_GUIDE.md)
+
